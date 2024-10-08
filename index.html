@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Card Game Test</title>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+</head>
+<body>
+    <h1>Card Game Room</h1>
+
+    <!-- Room creation and joining -->
+    <button id="createRoomBtn">Create Room</button>
+    <input type="text" id="roomIdInput" placeholder="Enter Room ID to join">
+    <button id="joinRoomBtn">Join Room</button>
+
+    <h2>Room ID: <span id="roomIdDisplay"></span></h2>
+
+    <!-- Game status and controls -->
+    <button id="startGameBtn" style="display:none;">Start Game</button>
+
+    <h2>Game Status</h2>
+    <div id="gameStatus"></div>
+
+    <h2>Your Cards</h2>
+    <div id="yourCards"></div>
+
+    <script>
+        const createRoomBtn = document.getElementById("createRoomBtn");
+        const joinRoomBtn = document.getElementById("joinRoomBtn");
+        const startGameBtn = document.getElementById("startGameBtn");
+        const roomIdInput = document.getElementById("roomIdInput");
+        const roomIdDisplay = document.getElementById("roomIdDisplay");
+        const gameStatusDiv = document.getElementById("gameStatus");
+        const yourCardsDiv = document.getElementById("yourCards");
+
+        let socket = io('http://localhost:5000');
+        let roomId = null;
+
+        // Connection events
+        socket.on('connect', () => {
+            console.log('Connected to server');
+        });
+
+        socket.on('disconnect', () => {
+            console.log('Disconnected from server');
+        });
+
+        socket.on('message',(data) => {
+            console.log(data)
+        })
+
+        // Handle room creation
+        socket.on('room:create', (data) => {
+            if (data.error) {
+                console.log('Room creation failed:', data.error);
+            } else {
+                roomId = data.room_id;
+                roomIdDisplay.textContent = roomId;  // Display room ID
+                console.log('Room created with ID:', roomId);
+                startGameBtn.style.display = "inline";  // Show "Start Game" button after room creation
+            }
+        });
+
+        // Handle room joining
+        socket.on('room:join', (data) => {
+            if (data.error) {
+                console.log('Room joining failed:', data.error);
+            } else {
+                roomId = data.room_id;
+                roomIdDisplay.textContent = roomId;  // Display room ID
+                console.log('Joined room:', roomId);
+            }
+        });
+        socket.on('room:udpate', (data) => {
+            
+            console.log('Update in room:', data);
+            
+        });
+
+        // Handle game status update
+        socket.on('game:status', (data) => {
+            let statusHtml = `<p>Player to play: ${data.player_to_play}</p>`;
+            statusHtml += "<ul>";
+            for (const [playerId, info] of Object.entries(data.players_info)) {
+                statusHtml += `<li>Player ${playerId}: ${info.nb_cards} cards, Score: ${info.score}, Current Round: ${info.current_round}</li>`;
+            }
+            statusHtml += "</ul>";
+            gameStatusDiv.innerHTML = statusHtml;  // Update game status
+        });
+
+        // Handle receiving cards
+        socket.on('game:cards', (data) => {
+            let cardsHtml = "<p>Your cards:</p><ul>";
+            if(data.cards.length == 0){
+                cardsHtml += `<li>No cards</li>`
+            }
+
+            data.cards.forEach(card => {
+                cardsHtml += `<li>${card}</li>`;
+            });
+            cardsHtml += "</ul>";
+            yourCardsDiv.innerHTML = cardsHtml;  // Display player's cards
+        });
+
+        // Create room
+        createRoomBtn.onclick = async () => {
+            socket.emit('room:create', {});  // Emit room creation event
+        };
+
+        // Join room
+        joinRoomBtn.onclick = async () => {
+            const inputRoomId = roomIdInput.value;
+            if (inputRoomId) {
+                socket.emit('room:join', { room_id: inputRoomId });  // Emit join room event
+            } else {
+                console.log('Please enter a room ID to join.');
+            }
+        };
+
+        // Start game
+        startGameBtn.onclick = async () => {
+            if (roomId) {
+                socket.emit('game:start', { room_id: roomId });  // Emit start game event
+            } else {
+                console.log('No room to start the game.');
+            }
+        };
+    </script>
+</body>
+</html>
