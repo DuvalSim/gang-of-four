@@ -1,10 +1,10 @@
 from typing import List
-from enum import Enum
+from enum import Enum, IntEnum
 import random
 
 from collections import Counter
 
-class Suits(Enum):
+class Suits(IntEnum):
         
         Green = 0,
         Yellow = 1,
@@ -14,7 +14,7 @@ class Suits(Enum):
         def __str__(self):
             return self.name
         
-class CombinationType(Enum):
+class CombinationType(IntEnum):
     HIGH_CARD = 0
     PAIR = 1
     TWO_PAIRS = 2
@@ -32,6 +32,13 @@ class Card:
 
     ranks = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", 'Phoenix', 'Dragon']
 
+    @staticmethod
+    def build_from_str(card_str :str):
+        suit_dict = {"G": Suits.Green, "Y": Suits.Yellow, "R": Suits.Red, "M": Suits.Multicolor}
+        rank, suit = card_str.split("-")
+        suit = suit_dict[suit]
+        return Card(rank, suit)
+    
     def __init__(self, rank: str, suit: Suits) -> None:
 
         if rank not in Card.ranks:
@@ -57,15 +64,18 @@ class Card:
     
     def __str__(self) -> str:
         return f"{self.rank}-{str(self.suit)[0]}"
+    
+    def __repr__(self) -> str:
+        return f"{self.rank}-{str(self.suit)[0]}"
 
 class Deck:
 
 
     def __init__(self) -> None:
-        self.suits = [Suits.RED,Suits.YELLOW, Suits.GREEN]
+        self.suits = [Suits.Red,Suits.Yellow, Suits.Green]
         self.ranks = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10']
-        self.special_cards = [('1', Suits.MULTI), ('Phoenix', Suits.GREEN),
-                              ('Phoenix', Suits.YELLOW), ('Dragon', Suits.RED)]
+        self.special_cards = [('1', Suits.Multicolor), ('Phoenix', Suits.Green),
+                              ('Phoenix', Suits.Yellow), ('Dragon', Suits.Red)]
         
         self.deck = self.__create_deck()
 
@@ -92,7 +102,16 @@ class Hand:
     # rank_order = '12345678910PhoenixDragon'
     rank_order = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", 'Phoenix', 'Dragon']
 
+    @staticmethod
+    def build_from_str(card_str_list: List[str]):
+        result_card_list : List[Card] = []
+        for card_str in card_str_list:
+            result_card_list.append(Card.build_from_str(card_str))
+
+        return Hand(result_card_list)
+    
     def __init__(self, cards: List[Card]):
+        
         self.cards = sorted(cards)
         self.has_poulet = any(card.is_poulet for card in self.cards)
         self.ranks = [card.rank for card in self.cards]
@@ -103,9 +122,18 @@ class Hand:
         if self.combination is None:
             raise ValueError("Not a valid hand")
 
+    def get_hand_size(self) -> int:
+        return len(self.cards)
+    
+    def get_card_list(self) -> List[Card]:
+        return self.cards.copy()
+    
+    def get_str_card_list(self):
+        return [str(card) for card in self.cards]
 
     def check_valid_five_combination(self):
-        if any([card.is_poulet() for card in self.cards]):
+        
+        if self.has_poulet:
             return False
         else:
             return len(self.cards) == 5
@@ -114,7 +142,8 @@ class Hand:
         """Check if all cards have the same suit."""
         suits = self.suits.copy()
         # multicolor works as any color
-        suits.remove(Suits.Multicolor)
+        if Suits.Multicolor in suits:
+            suits.remove(Suits.Multicolor)
 
         return (len(set(suits)) == 1) and self.check_valid_five_combination()
 
@@ -132,7 +161,7 @@ class Hand:
 
     def is_full_house(self):
         """Check for a full house (three of a kind and a pair)."""
-        if not self.check_valid_five_combination:
+        if not len(self.cards) == 5:
             return False
         
         rank_counts = Counter(self.ranks)
@@ -190,6 +219,8 @@ class Hand:
     
     def __eq__(self, other):
         """Equality comparison between two hands."""
+
+        return self.ranks[-1] == other.ranks[-1]
         # gang of four 
         if self.combination == other.combination:
             if self.combination == CombinationType.GANG_OF_X:
@@ -203,6 +234,7 @@ class Hand:
 
     def __lt__(self, other):
         """Less than comparison between two hands."""
+        return self.ranks[-1] < other.ranks[-1]
         if self._combination_rank() != other._combination_rank():
             return self._combination_rank() < other._combination_rank()
         # If the combination ranks are equal, compare individual cards
@@ -211,4 +243,5 @@ class Hand:
                 return self_card < other_card
         return False
     
-    
+    def __le__(self, other):
+        return self.__lt__(other) or self.__eq__(other)

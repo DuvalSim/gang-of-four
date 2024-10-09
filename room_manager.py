@@ -46,6 +46,9 @@ class RoomManager:
             raise ValueError(f"No such room [{room_id}]")
         
     def __getitem__(self, key):
-        return self.active_rooms[key]
+        room =self.active_rooms.get(key)
+        if room is None:
+            raise KeyError(f"Room [{key}] does not exist")
+        return room
         
                 

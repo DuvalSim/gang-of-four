@@ -14,16 +14,16 @@ class Player:
     def reset_hand(self):
         self.cards = []
 
-    def play_hand(self, hand_played: List[Card]):
-        if any([card not in self.cards for card in hand_played]):
-            raise ValueError("Some cards not in hand")
-        
+    def play_hand(self, cards_played: List[Card]):
+                
         current_player_hand = self.cards.copy()
 
         # check if no value error
-        for card in hand_played:
-            current_player_hand.remove(card)
-
+        try: 
+            for card in cards_played:
+                current_player_hand.remove(card)
+        except Exception:
+            raise ValueError("Some cards not in player hand hand")
         self.cards = current_player_hand
 
     def get_cards_in_hand(self) -> List[Card]:
@@ -31,6 +31,9 @@ class Player:
     
     def nb_cards_in_hand(self) -> int:
         return len(self.cards)
+    
+    def get_status(self):
+        return {"cards": [str(card) for card in self.get_cards_in_hand()]}
 
     def __eq__(self, other):
         return self.client_id == other.client_id

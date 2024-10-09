@@ -27,24 +27,33 @@ class Room:
         if not self.is_full():
             raise ValueError("Not enought player to start")
         
-        self.current_game = Game(self.players)
+        self.current_game = Game(list(self.players.values()))
 
-    def check_valid_player(self, client_id):
-        if self.players.get(client_id) is None:
-            raise ValueError(f"Client [{client_id}] not in room")
-
-    def play_turn(self, client_id, card_list: List[Card]):
-        if self.current_game is None:
-            raise ValueError("No game in progress")
-        
+    def get_player(self, client_id):
         player = self.players.get(client_id)
         if player is None:
-            raise ValueError("")
+            raise ValueError(f"Client [{client_id}] not in room")
+
+        return player
+
+    # def play_turn(self, client_id, card_list: List[Card]):
+    #     if self.current_game is None:
+    #         raise ValueError("No game in progress")
         
-        self.current_game.play_turn():
+    #     player = self.get_player(client_id=client_id)
+        
+    #     self.current_game.play_turn(player, card_list)
 
 
     def get_status(self):
-        return self.current_game.get_status()
+        
+        is_game_in_progress = (self.current_game is not None)        
+        status = {"game_in_progres" : is_game_in_progress}
+                
+        if is_game_in_progress:
+            status["game_info"] = self.current_game.get_status()
+
+        return status
+            
 
        

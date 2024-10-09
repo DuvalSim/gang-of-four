@@ -1,7 +1,12 @@
 from flask import Flask, render_template
 import socketio
 from room_manager import RoomManager
-from deck import Card
+from deck import Card, Hand
+from room import Room
+
+import logging
+
+logger = None
 
 # Create an ASGI Socket.IO server
 sio = socketio.AsyncServer(cors_allowed_origins='*', async_mode = 'asgi')
@@ -57,38 +62,62 @@ async def join_room(sid, data):
 
 @sio.on('game:start')
 async def start_game(sid, data):
-
-
     room_id = data["room_id"]
-
-    current_room = room_manager[room_id]
+    
     try:
+        current_room = room_manager[room_id]
         current_room.start_game()        
     except Exception as e:
         print("Error:", str(e))
         await sio.emit('game:start', {'error': str(e)}, sid)
         raise
     
-    await sio.emit('game:status', current_room.get_status(), room=room_id)
+    await sio.emit('game:status', current_room.current_game.get_status(), room=room_id)
 
     for player in current_room.get_players():
-        data = {"cards": [str(card) for card in player.get_cards_in_hand()]}
+        data = player.get_status()
         await sio.emit('game:cards', data, to=player.client_id)
+
+    print("Done starting game")
 
 @sio.on('game:play')
 async def play_game(sid, data):
 
 
     room_id = data["room_id"]
+    action = data["action"]
     cards_played = data["cards_played"]
-    current_room = room_manager[room_id]
+    
     try:
-        current_room.play_turn(room)        
+        current_room = room_manager[room_id]
+        current_hand = None
+        if action == "play":
+            current_hand = Hand.build_from_str(cards_played)
+            current_room.current_game.play_turn(sid, current_hand)
+        else:
+            current_room.current_game.play_turn(sid, pass_turn=True)
     except Exception as e:
         print("Error:", str(e))
-        await sio.emit('game:start', {'error': str(e)}, sid)
-        raise
+        await sio.emit('game:play', {'error': str(e)}, sid)
     
+    play_data = {
+        "player_play": sid,
+        "action": data["action"]}
+    if action == "play":
+        play_data["cards_played"] = [str(card) for card in current_hand.get_card_list()]  
+
+    status_data = current_room.current_game.get_status()
+
+    await sio.emit('game:play', play_data, room=room_id)
+    await sio.emit('game:status', status_data , room=room_id)
+
+    print("Done handling play")
+    
+
+async def __send_room_status(current_room: Room):
+
+    room_id = current_room.room_id
+
     await sio.emit('game:status', current_room.get_status(), room=room_id)
 
     for player in current_room.get_players():
@@ -101,4 +130,4 @@ async def play_game(sid, data):
 
 if __name__ == '__main__':
     import uvicorn
-    uvicorn.run(app, host='0.0.0.0', port=5000)
+    uvicorn.run(app, host='0.0.0.0', port=5000, log_level="debug")
