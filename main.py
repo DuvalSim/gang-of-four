@@ -99,6 +99,7 @@ async def play_game(sid, data):
     except Exception as e:
         print("Error:", str(e))
         await sio.emit('game:play', {'error': str(e)}, sid)
+        raise
     
     play_data = {
         "player_play": sid,

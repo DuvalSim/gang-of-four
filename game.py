@@ -43,7 +43,7 @@ class Game:
 
     def deal_cards(self):
         """Deal cards to all players."""
-        card_per_player = self.deck.nb_cards() // 4
+        card_per_player = self.deck.nb_cards() // 8
         for player in self.players:
             player.add_cards(self.deck.deal_card(card_per_player))
 
@@ -82,7 +82,7 @@ class Game:
             self.current_turn_player_idx = (self.current_turn_player_idx + 1) % 4  
         
         # Next round
-        elif current_player.nb_cards_in_hand == 0:
+        elif current_player.nb_cards_in_hand() == 0:
             self.score_round()
             self.start_new_round()
         else:

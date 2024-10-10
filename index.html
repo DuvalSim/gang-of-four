@@ -16,11 +16,15 @@
         .selected {
             background-color: yellow;
         }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
     <h1>Card Game Room</h1>
- 
+
     <!-- Room creation and joining -->
     <button id="createRoomBtn">Create Room</button>
     <input type="text" id="roomIdInput" placeholder="Enter Room ID to join">
@@ -34,9 +38,17 @@
     <h2>Game Status</h2>
     <div id="gameStatus"></div>
 
-    <!-- Display for last game action -->
+    <h2>Hand on Board</h2>
+    <div id="gameBoard"></div>
+
+
+    <!-- Display for last play -->
     <h2>Last Game Action</h2>
     <div id="gameAction"></div>
+
+    <!-- Error display -->
+    <h2>Error Log</h2>
+    <div id="errorDisplay" class="error"></div>
 
     <h2>Your Cards</h2>
     <div id="yourCards"></div>
@@ -52,15 +64,26 @@
         const roomIdInput = document.getElementById("roomIdInput");
         const roomIdDisplay = document.getElementById("roomIdDisplay");
         const gameStatusDiv = document.getElementById("gameStatus");
-        const gameActionDiv = document.getElementById("gameAction");  // New div for actions
+        const gameBoardDiv = document.getElementById("gameBoard");
+        const gameActionDiv = document.getElementById("gameAction");
+        const errorDisplayDiv = document.getElementById("errorDisplay");
         const yourCardsDiv = document.getElementById("yourCards");
+        
 
         let socket = io('http://localhost:5000');
         let roomId = null;
         let selectedCards = [];
         let playerId = null;
 
-        console.log("I am client:", playerId);
+        // Function to display errors
+        function displayError(message) {
+            errorDisplayDiv.textContent = message;
+        }
+
+        // Clear error when request is successful
+        function clearError() {
+            errorDisplayDiv.textContent = '';
+        }
 
         // Connection events
         socket.on('connect', () => {
@@ -79,8 +102,9 @@
         // Handle room creation
         socket.on('room:create', (data) => {
             if (data.error) {
-                console.log('Room creation failed:', data.error);
+                displayError('Room creation failed: ' + data.error);
             } else {
+                clearError();
                 roomId = data.room_id;
                 roomIdDisplay.textContent = roomId;  // Display room ID
                 console.log('Room created with ID:', roomId);
@@ -91,8 +115,9 @@
         // Handle room joining
         socket.on('room:join', (data) => {
             if (data.error) {
-                console.log('Room joining failed:', data.error);
+                displayError('Room joining failed: ' + data.error);
             } else {
+                clearError();
                 roomId = data.room_id;
                 roomIdDisplay.textContent = roomId;  // Display room ID
                 console.log('Joined room:', roomId);
@@ -101,83 +126,74 @@
 
         // Handle game status update
         socket.on('game:status', (data) => {
-            let statusHtml = `<p>Player to play: ${data.player_to_play === playerId ? 'You' : data.player_to_play}</p>`;
-            statusHtml += `<p>Current round:  ${data.current_round}</p>`;
-            statusHtml += "<ul>";
-            for (const [playerId, info] of Object.entries(data.players_info)) {
-                statusHtml += `<li>Player ${playerId}: ${info.nb_cards} cards, Score: ${info.score}</li>`;
+            if (data.error) {
+                displayError('Game status error: ' + data.error);
+            } else {
+                clearError();
+                let statusHtml = `<p>Player to play: ${data.player_to_play === playerId ? 'You' : data.player_to_play}</p>`;
+                statusHtml += `<p>Current round:  ${data.current_round}</p>`;
+                statusHtml += "<ul>";
+                for (const [playerId, info] of Object.entries(data.players_info)) {
+                    statusHtml += `<li>Player ${playerId}: ${info.nb_cards} cards, Score: ${info.score}</li>`;
+                }
+                statusHtml += "</ul>";
+                gameStatusDiv.innerHTML = statusHtml;  // Update game status
+                if(data.previous_hand){
+                    // New cycle
+                    gameBoardDiv.innerHTML = `<p>Last hand played: ${data.previous_hand.join(", ")}</p>`;
+                } else {
+                    gameBoardDiv.innerHTML = `<p>New cycle -- play any combination</p>`;
+                    
+                }
             }
-            statusHtml += "</ul>";
-            gameStatusDiv.innerHTML = statusHtml;  // Update game status
+                
         });
 
         // Handle receiving cards
+        // Handle receiving cards
+        // Handle receiving cards
         socket.on('game:cards', (data) => {
-            console.log("received game:cards");
-            yourCardsDiv.innerHTML = '';  // Clear previous cards
-            selectedCards = [];  // Reset selected cards
-
-            if (data.cards.length == 0) {
-                yourCardsDiv.innerHTML = "<p>No cards</p>";
-            }
-
-            data.cards.forEach((card, index) => {
-                let cardElement = document.createElement('div');
-                cardElement.className = 'card';
-                cardElement.textContent = card;
-                cardElement.dataset.cardIndex = index;
-
-                // Click to select/unselect card
-                cardElement.onclick = () => {
-                    if (cardElement.classList.contains('selected')) {
-                        cardElement.classList.remove('selected');
-                        selectedCards = selectedCards.filter(c => c !== card);
-                    } else {
-                        cardElement.classList.add('selected');
-                        selectedCards.push(card);
-                    }
-                    console.log('Selected cards:', selectedCards);
-                };
-
-                yourCardsDiv.appendChild(cardElement);
-            });
-
-            playCardsBtn.style.display = "inline";  // Show play cards button
-        });
-
-        // Handle play actions
-        socket.on('game:play', (data) => {
-
             if (data.error) {
-                console.log('Error play:', data.error);
+                displayError('Error receiving cards: ' + data.error);
             } else {
-                const { player_play, action, cards_played } = data;
+                clearError();
+                console.log("received game:cards");
+                yourCardsDiv.innerHTML = '';  // Clear previous cards
+                selectedCards = [];  // Reset selected cards
 
-                // Display the last action in the gameAction div
-                const actionText = (action === 'pass') ? `Player ${player_play} passed` : `Player ${player_play} played: ${cards_played.join(", ")}`;
-                gameActionDiv.innerHTML = `<p>${actionText}</p><p>Last hand played: ${cards_played.join(", ") || 'None'}</p>`;
-
-                if (player_play === playerId && action === 'play') {
-                    console.log('You played:', cards_played);
-                    // Remove played cards from the hand
-                    selectedCards = [];
-                    updatePlayerHandAfterPlay(cards_played);
-                } else {
-                    console.log(`Player ${player_play} ${action} their turn.`);
+                if (data.cards.length == 0) {
+                    yourCardsDiv.innerHTML = "<p>No cards</p>";
                 }
+
+                data.cards.forEach((card, index) => {
+                    let cardElement = document.createElement('div');
+                    cardElement.className = 'card';
+                    cardElement.textContent = card;  // Assuming `card` is a string like '5H' for 5 of Hearts
+
+                    // We now use both the card's name and its index as a unique identifier for selection
+                    let cardId = `${index}`;
+                    cardElement.dataset.cardId = cardId;
+
+                    // Click to select/unselect card
+                    cardElement.onclick = () => {
+                        if (cardElement.classList.contains('selected')) {
+                            cardElement.classList.remove('selected');
+                            // Remove only the specific card instance by cardId (not all instances of '5H')
+                            selectedCards = selectedCards.filter(c => c.cardId !== cardId);
+                        } else {
+                            cardElement.classList.add('selected');
+                            // Add the exact card instance (track both cardId and the card value)
+                            selectedCards.push({ cardId, card });
+                        }
+                        console.log('Selected cards:', selectedCards);
+                    };
+
+                    yourCardsDiv.appendChild(cardElement);
+                });
+
+                playCardsBtn.style.display = "inline";  // Show play cards button
             }
         });
-
-        // Update player's hand after cards are played
-        function updatePlayerHandAfterPlay(cardsPlayed) {
-            const cardElements = Array.from(document.querySelectorAll('.card'));
-
-            cardElements.forEach(cardElement => {
-                if (cardsPlayed.includes(cardElement.textContent)) {
-                    yourCardsDiv.removeChild(cardElement);  // Remove played card from display
-                }
-            });
-        }
 
         // Create room
         createRoomBtn.onclick = async () => {
@@ -203,20 +219,65 @@
             }
         };
 
-        // Play selected cards
         playCardsBtn.onclick = async () => {
             const passTurn = (selectedCards.length == 0);
             if (roomId) {
                 const action = passTurn ? 'pass' : 'play';
+                const cardsToSend = selectedCards.map(c => c.card);  // Only send rank and suit
+
+                // Emit the play event with the selected cards
                 socket.emit('game:play', {
                     room_id: roomId,
                     action: action,
-                    cards_played: selectedCards
+                    cards_played: cardsToSend
                 });
+
+                // Store the played cards with their cardId for future removal after confirmation
+                lastPlayedCards = [...selectedCards];  // Copy the selected cards (with cardId and card)
             } else {
                 console.log('No room.');
             }
         };
+
+        // Handle play actions
+        socket.on('game:play', (data) => {
+            if (data.error) {
+                displayError('Error play: ' + data.error);
+            } else {
+                clearError();
+                const { player_play, action, cards_played } = data;
+
+                // Display the last action in the gameAction div
+                const actionText = (action === 'pass') ? `Player ${player_play} passed` : `Player ${player_play} played: ${cards_played.join(", ")}`;
+                gameActionDiv.textContent = actionText;
+
+                // If it's the current player who played, update their hand
+                if (player_play === playerId && action === 'play') {
+                    console.log('You played:', cards_played);
+                    updatePlayerHandAfterPlay(lastPlayedCards);  // Remove the played cards
+                    // Clear selected cards after play
+                    selectedCards = [];
+                } else {
+                    console.log(`Player ${player_play} ${action} their turn.`);
+                }
+            }
+        });
+
+        // Update player's hand after cards are played
+        function updatePlayerHandAfterPlay(cardsPlayed) {
+            const cardElements = Array.from(document.querySelectorAll('.card'));
+
+            cardsPlayed.forEach(playedCard => {
+                // Find the card element by its unique cardId and remove it from the DOM
+                const cardElement = cardElements.find(el => el.dataset.cardId === playedCard.cardId);
+                if (cardElement) {
+                    yourCardsDiv.removeChild(cardElement);  // Remove played card from the display
+                }
+            });
+        
+            
+        }
+
     </script>
 </body>
 </html>

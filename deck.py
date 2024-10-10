@@ -60,6 +60,9 @@ class Card:
         rank_a_idx = Card.ranks.index(self.rank)
         rank_b_idx = Card.ranks.index(other.rank)
         return (rank_a_idx < rank_b_idx) or ((rank_b_idx == rank_b_idx) and (self.suit < other.suit))
+    
+    def __le__(self, other) -> bool:
+        return self.__lt__(other) or self.__eq__(other)
         
     
     def __str__(self) -> str:
@@ -244,4 +247,4 @@ class Hand:
         return False
     
     def __le__(self, other):
-        return self.__lt__(other) or self.__eq__(other)
+        return (self.__lt__(other) or self.__eq__(other))
