@@ -110,10 +110,39 @@ async def play_game(sid, data):
     status_data = current_room.current_game.get_status()
 
     await sio.emit('game:play', play_data, room=room_id)
+
+    if status_data.get("inter_round_info", None) is not None:
+        for player in current_room.get_players():
+            data = player.get_status()
+            await sio.emit('game:cards', data, to=player.client_id)   
+    
     await sio.emit('game:status', status_data , room=room_id)
 
-    print("Done handling play")
+
+@sio.on('game:card_exchange')
+async def card_exchange(sid, data):   
     
+    room_id = data["room_id"]
+    card_to_exchange = data["card_to_give"]
+
+    try:
+        current_room = room_manager[room_id]
+        winner_to_looser_card = Card.build_from_str(card_to_exchange)
+
+        current_room.current_game.complete_card_exchanges(sid, winner_to_looser_card)
+    
+    except Exception as e:
+        print("Error:", str(e))
+        await sio.emit('game:card_exchange', {'error': str(e)}, sid)
+        raise
+
+    else:
+        card_exchange_data = {"winner": sid, "looser": current_room.current_game.last_round_looser.client_id ,"winner_to_looser_card": card_to_exchange}
+
+        await sio.emit('game:card_exchange', card_exchange_data, room=room_id)
+
+
+
 
 async def __send_room_status(current_room: Room):
 

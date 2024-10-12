@@ -14,7 +14,7 @@ class Suits(IntEnum):
         def __str__(self):
             return self.name
         
-class CombinationType(IntEnum):
+class HandType(IntEnum):
     HIGH_CARD = 0
     PAIR = 1
     TWO_PAIRS = 2
@@ -59,7 +59,7 @@ class Card:
     def __lt__(self, other:object) -> bool:
         rank_a_idx = Card.ranks.index(self.rank)
         rank_b_idx = Card.ranks.index(other.rank)
-        return (rank_a_idx < rank_b_idx) or ((rank_b_idx == rank_b_idx) and (self.suit < other.suit))
+        return (rank_a_idx < rank_b_idx) or ((rank_a_idx == rank_b_idx) and (self.suit < other.suit))
     
     def __le__(self, other) -> bool:
         return self.__lt__(other) or self.__eq__(other)
@@ -120,10 +120,13 @@ class Hand:
         self.ranks = [card.rank for card in self.cards]
         self.suits = [card.suit for card in self.cards]
 
-        self.combination = self.check_valid_combination()
+        self.hand_type = self.calculate_hand_type()
 
-        if self.combination is None:
+        if self.hand_type is None:
             raise ValueError("Not a valid hand")
+        
+    def contains(self, card: Card):
+        return card in self.cards
 
     def get_hand_size(self) -> int:
         return len(self.cards)
@@ -155,7 +158,7 @@ class Hand:
         if not self.check_valid_five_combination():
             return False
         int_ranks = [int(rank) for rank in self.ranks]
-        return (int_ranks == list(range(int_ranks[0], int_ranks[0] + 4)))
+        return (int_ranks == list(range(int_ranks[0], int_ranks[0] + 5)))
 
     def is_gank_of_x(self):
         """Check if there are four cards of the same rank."""
@@ -190,60 +193,68 @@ class Hand:
     def is_high_card(self):
         return len(self.cards) == 1
 
-    def check_valid_combination(self) -> CombinationType:
+    def calculate_hand_type(self) -> HandType:
         if self.is_gank_of_x():
-            return CombinationType.GANG_OF_X
+            return HandType.GANG_OF_X
         
         if self.is_flush() and self.is_straight():
-            return CombinationType.STRAIGHT_FLUSH
+            return HandType.STRAIGHT_FLUSH
         
         if self.is_full_house():
-            return CombinationType.FULL_HOUSE
+            return HandType.FULL_HOUSE
         
         if self.is_flush():
-            return CombinationType.FLUSH
+            return HandType.FLUSH
 
         if self.is_straight():
-            return CombinationType.STRAIGHT
+            return HandType.STRAIGHT
 
         if self.is_three_of_a_kind():
-            return CombinationType.THREE_OF_A_KIND
+            return HandType.THREE_OF_A_KIND
     
         if self.is_two_pair():
-            return CombinationType.TWO_PAIRS
+            return HandType.TWO_PAIRS
     
         if self.is_one_pair():
-            return CombinationType.PAIR
+            return HandType.PAIR
 
         if self.is_high_card():
-            return CombinationType.HIGH_CARD
+            return HandType.HIGH_CARD
         
         return None
     
     def __eq__(self, other):
         """Equality comparison between two hands."""
+        return self.cards == other.cards
 
-        return self.ranks[-1] == other.ranks[-1]
-        # gang of four 
-        if self.combination == other.combination:
-            if self.combination == CombinationType.GANG_OF_X:
-                return self.ranks == other.ranks
-            
-            if self.is_straight():
-                return (self.suits[0] == other.suits[0])
-        else:
-            return False
-        return self._combination_rank() == other._combination_rank() and self.cards == other.cards
-
-    def __lt__(self, other):
+    def __lt__(self, other: object):
         """Less than comparison between two hands."""
-        return self.ranks[-1] < other.ranks[-1]
-        if self._combination_rank() != other._combination_rank():
-            return self._combination_rank() < other._combination_rank()
-        # If the combination ranks are equal, compare individual cards
-        for self_card, other_card in zip(reversed(self.cards), reversed(other.cards)):
-            if self_card != other_card:
-                return self_card < other_card
+        if type(other) != Hand:
+            raise ValueError(f"Cannot compare Hand and [{type(other)}]")
+     
+        if (self.get_hand_size() != other.get_hand_size()) and not (HandType.GANG_OF_X in [self.hand_type, other.hand_type]):
+            raise ValueError(f"Cannot compare hands of different lenghts")
+
+        
+        if self.hand_type < other.hand_type:
+            return True
+        
+        elif self.hand_type == other.hand_type:
+
+            if self.hand_type == HandType.GANG_OF_X:
+                if self.get_hand_size() != other.get_hand_size():
+                    # Gang of 5 < Gang of 6 
+                    return self.get_hand_size() < other.get_hand_size()
+                else:
+                    # Check rank of cards
+                    return self.cards[0] < other.cards[0]
+                
+            # Hands have same number of cards
+            for self_card, other_card in zip(*map(reversed, (self.cards, other.cards))):
+                if self_card != other_card:
+                    return (self_card < other_card)
+            
+            # All cards are equal
         return False
     
     def __le__(self, other):

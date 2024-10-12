@@ -24,8 +24,9 @@ class Room:
         return list(self.players.values())
     
     def start_game(self):
-        if not self.is_full():
-            raise ValueError("Not enought player to start")
+        # TODO
+        # if not self.is_full():
+        #     raise ValueError("Not enought player to start")
         
         self.current_game = Game(list(self.players.values()))
 

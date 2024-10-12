@@ -1,0 +1,3 @@
+changer client id par un truc coté client
+
+Sinon, quand on se reco ça marche jamais

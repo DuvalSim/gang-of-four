@@ -75,6 +75,15 @@
         let selectedCards = [];
         let playerId = null;
 
+        let isInterRoundPhase = false;
+        let looserCard = null;  // Store the card that the looser gives to the winner
+
+        let lastRoundLooser = null;
+        let lastRoundWinner = null;
+
+        let cardIndex = 0;  // To keep track of unique card IDs
+
+
         // Function to display errors
         function displayError(message) {
             errorDisplayDiv.textContent = message;
@@ -85,6 +94,10 @@
             errorDisplayDiv.textContent = '';
         }
 
+        socket.onAny((m,data)=> {
+            console.log(`Received: ${m}`, data)
+        });
+        
         // Connection events
         socket.on('connect', () => {
             playerId = socket.id;
@@ -130,6 +143,21 @@
                 displayError('Game status error: ' + data.error);
             } else {
                 clearError();
+                // Check if the game is still ongoing
+                if (!data.game_is_on) {
+                    // Game has ended, display the winners
+                    const winners = data.game_winners;
+                    let winnersHtml = '<p>Game Over!</p>';
+                    if (winners.length > 1) {
+                        winnersHtml += `<p>It's a tie! Winners: ${winners.join(", ")}</p>`;
+                    } else {
+                        winnersHtml += `<p>The winner is: ${winners[0]}</p>`;
+                    }
+                    gameStatusDiv.innerHTML = winnersHtml;
+                    return;  // Exit early since the game is over
+                }
+
+                // If the game is still on, update the status as usual
                 let statusHtml = `<p>Player to play: ${data.player_to_play === playerId ? 'You' : data.player_to_play}</p>`;
                 statusHtml += `<p>Current round:  ${data.current_round}</p>`;
                 statusHtml += "<ul>";
@@ -138,60 +166,29 @@
                 }
                 statusHtml += "</ul>";
                 gameStatusDiv.innerHTML = statusHtml;  // Update game status
-                if(data.previous_hand){
-                    // New cycle
+
+                if (data.inter_round_info) {
+                    // If inter_round_info exists, the round has ended, and a card exchange phase begins
+                    isInterRoundPhase = true;
+
+                    const { last_winner, last_looser, looser_to_winner_card } = data.inter_round_info;
+                    looserCard = looser_to_winner_card;
+                    lastRoundLooser = last_looser
+                    lastRoundWinner = last_winner
+
+                    // If the current player is the winner, update the button for card exchange
+                    if (playerId === last_winner) {
+                        playCardsBtn.textContent = "Exchange Card";
+                        playCardsBtn.style.display = "inline";
+                    }
+
+                    // Display inter-round information
+                    gameActionDiv.innerHTML = `<p>Round ended. Winner: ${last_winner}, Looser: ${last_looser}. Looser gave ${looserCard} to the winner.</p>`;
+                } else if (data.previous_hand) {
                     gameBoardDiv.innerHTML = `<p>Last hand played: ${data.previous_hand.join(", ")}</p>`;
                 } else {
                     gameBoardDiv.innerHTML = `<p>New cycle -- play any combination</p>`;
-                    
                 }
-            }
-                
-        });
-
-        // Handle receiving cards
-        // Handle receiving cards
-        // Handle receiving cards
-        socket.on('game:cards', (data) => {
-            if (data.error) {
-                displayError('Error receiving cards: ' + data.error);
-            } else {
-                clearError();
-                console.log("received game:cards");
-                yourCardsDiv.innerHTML = '';  // Clear previous cards
-                selectedCards = [];  // Reset selected cards
-
-                if (data.cards.length == 0) {
-                    yourCardsDiv.innerHTML = "<p>No cards</p>";
-                }
-
-                data.cards.forEach((card, index) => {
-                    let cardElement = document.createElement('div');
-                    cardElement.className = 'card';
-                    cardElement.textContent = card;  // Assuming `card` is a string like '5H' for 5 of Hearts
-
-                    // We now use both the card's name and its index as a unique identifier for selection
-                    let cardId = `${index}`;
-                    cardElement.dataset.cardId = cardId;
-
-                    // Click to select/unselect card
-                    cardElement.onclick = () => {
-                        if (cardElement.classList.contains('selected')) {
-                            cardElement.classList.remove('selected');
-                            // Remove only the specific card instance by cardId (not all instances of '5H')
-                            selectedCards = selectedCards.filter(c => c.cardId !== cardId);
-                        } else {
-                            cardElement.classList.add('selected');
-                            // Add the exact card instance (track both cardId and the card value)
-                            selectedCards.push({ cardId, card });
-                        }
-                        console.log('Selected cards:', selectedCards);
-                    };
-
-                    yourCardsDiv.appendChild(cardElement);
-                });
-
-                playCardsBtn.style.display = "inline";  // Show play cards button
             }
         });
 
@@ -219,25 +216,77 @@
             }
         };
 
+        // Play selected cards or exchange card in inter-round phase
         playCardsBtn.onclick = async () => {
-            const passTurn = (selectedCards.length == 0);
-            if (roomId) {
-                const action = passTurn ? 'pass' : 'play';
-                const cardsToSend = selectedCards.map(c => c.card);  // Only send rank and suit
+            if (isInterRoundPhase && (lastRoundWinner === playerId)) {
+                // Inter-round phase: winner exchanges a card with the looser
+                if (selectedCards.length === 1) {
+                    const cardToGive = selectedCards[0].card;  // Only one card should be selected for exchange
+                    lastPlayedCards = [...selectedCards];
+                    socket.emit('game:card_exchange', {
+                        room_id: roomId,
+                        card_to_give: cardToGive
+                    });
 
-                // Emit the play event with the selected cards
-                socket.emit('game:play', {
-                    room_id: roomId,
-                    action: action,
-                    cards_played: cardsToSend
-                });
-
-                // Store the played cards with their cardId for future removal after confirmation
-                lastPlayedCards = [...selectedCards];  // Copy the selected cards (with cardId and card)
+                    console.log('Card exchange initiated:', cardToGive);
+                } else {
+                    displayError('Please select exactly one card to exchange.');
+                }
             } else {
-                console.log('No room.');
+                // Normal play phase
+                const passTurn = (selectedCards.length == 0);
+                if (roomId) {
+                    const action = passTurn ? 'pass' : 'play';
+                    const cardsToSend = selectedCards.map(c => c.card);  // Only send rank and suit
+
+                    socket.emit('game:play', {
+                        room_id: roomId,
+                        action: action,
+                        cards_played: cardsToSend
+                    });
+
+                    lastPlayedCards = [...selectedCards];  // Store the played cards
+                } else {
+                    console.log('No room.');
+                }
             }
         };
+
+        // Handle card exchange notification
+        socket.on('game:card_exchange', (data) => {
+            if (data.error) {
+
+                displayError('Card exchange failed: ' + data.error);
+
+            } else {
+                clearError();
+
+                console.log("Exchange done")
+                const { winner, looser, winner_to_looser_card } = data;  // Server sends back only the card that the winner gave to the looser
+
+                // Display card exchange information using the looserCard from the earlier game:status event
+                gameActionDiv.innerHTML = `<p>Card exchange: Winner (${winner}) gave ${winner_to_looser_card} to Looser. Looser gave ${looserCard} in return.</p>`;
+
+
+                if (playerId === winner) {
+                    // Remove the card sent to looser
+                    updatePlayerHandAfterPlay(lastPlayedCards);
+                    playCardsBtn.textContent = "Play Selected Cards";
+                }
+
+                // If the current player is the looser, add the card they received to their hand
+                if (playerId === looser) {
+                    addCardToPlayerHand(winner_to_looser_card);
+                }
+                // Reset for the next round
+                
+                isInterRoundPhase = false;
+
+                looserCard = null;  // Clear looserCard after exchange
+                lastRoundLooser = null;
+                lastRoundWinner = null;
+            }
+        });
 
         // Handle play actions
         socket.on('game:play', (data) => {
@@ -255,8 +304,7 @@
                 if (player_play === playerId && action === 'play') {
                     console.log('You played:', cards_played);
                     updatePlayerHandAfterPlay(lastPlayedCards);  // Remove the played cards
-                    // Clear selected cards after play
-                    selectedCards = [];
+
                 } else {
                     console.log(`Player ${player_play} ${action} their turn.`);
                 }
@@ -274,8 +322,82 @@
                     yourCardsDiv.removeChild(cardElement);  // Remove played card from the display
                 }
             });
+
+            selectedCards = []
         
             
+        }
+
+        // Handle receiving cards
+        socket.on('game:cards', (data) => {
+            if (data.error) {
+                displayError('Error receiving cards: ' + data.error);
+            } else {
+                clearError();
+                console.log("received game:cards");
+                yourCardsDiv.innerHTML = '';  // Clear previous cards
+                selectedCards = [];  // Reset selected cards
+                cardIndex = 0
+                if (data.cards.length == 0) {
+                    yourCardsDiv.innerHTML = "<p>No cards</p>";
+                }              
+
+                data.cards.forEach((card) => {
+                    let cardElement = document.createElement('div');
+                    cardElement.className = 'card';
+                    cardElement.textContent = card;  // Assuming `card` is a string like '5H' for 5 of Hearts
+
+                    // Increment card index for a unique cardId
+                    let cardId = `${cardIndex++}`;
+                    cardElement.dataset.cardId = cardId;
+
+                    // Click to select/unselect card
+                    cardElement.onclick = () => {
+                        if (cardElement.classList.contains('selected')) {
+                            cardElement.classList.remove('selected');
+                            // Remove only the specific card instance by cardId (not all instances of '5H')
+                            selectedCards = selectedCards.filter(c => c.cardId !== cardId);
+                        } else {
+                            cardElement.classList.add('selected');
+                            // Add the exact card instance (track both cardId and the card value)
+                            selectedCards.push({ cardId, card });
+                        }
+                        console.log('Selected cards:', selectedCards);
+                    };
+
+                    yourCardsDiv.appendChild(cardElement);
+                });
+
+                playCardsBtn.style.display = "inline";  // Show play cards button
+            }
+        });
+
+        // Function to add the received card to the looser's hand
+        function addCardToPlayerHand(cardReceived) {
+            let cardElement = document.createElement('div');
+            cardElement.className = 'card';
+            cardElement.textContent = cardReceived;
+
+            // Increment card index for unique cardId
+            let cardId = `${cardIndex++}`;
+            cardElement.dataset.cardId = cardId;
+
+            // Click to select/unselect card
+            cardElement.onclick = () => {
+                if (cardElement.classList.contains('selected')) {
+                    cardElement.classList.remove('selected');
+                    // Remove only the specific card instance by cardId
+                    selectedCards = selectedCards.filter(c => c.cardId !== cardId);
+                } else {
+                    cardElement.classList.add('selected');
+                    // Add the exact card instance (track both cardId and the card value)
+                    selectedCards.push({ cardId, card: cardReceived });
+                }
+                console.log('Selected cards:', selectedCards);
+            };
+
+            // Add the card to the player's hand
+            yourCardsDiv.appendChild(cardElement);
         }
 
     </script>
