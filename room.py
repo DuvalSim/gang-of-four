@@ -23,6 +23,9 @@ class Room:
     def get_players(self) -> List[Player]:
         return list(self.players.values())
     
+    def get_player(self, client_id) -> Player:
+        return self.players[client_id]
+    
     def start_game(self):
         # TODO
         # if not self.is_full():

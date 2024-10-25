@@ -173,7 +173,6 @@ class Game:
         next_player_to_start_idx = self.play_order_player_id_list.index(self.last_round_winner.client_id)
         self.set_current_player(next_player_to_start_idx)
         
-        self.previous_hand = None
         self.consecutive_pass = 0
 
         self.game_status = self.GameStatus.InterRound
@@ -190,6 +189,8 @@ class Game:
         self.last_round_looser.add_cards([winner_to_looser_card])
 
         self.winner_to_looser_card = winner_to_looser_card
+
+        self.previous_hand = None
 
         self.game_status = self.GameStatus.Playing
 
@@ -301,6 +302,14 @@ class Game:
     
     def get_winner_to_looser_card(self):
         return self.winner_to_looser_card
+    
+    def get_card_exchange_info(self):
+        return {
+            "last_winner" : self.last_round_winner.client_id,
+            "last_looser" : self.last_round_looser.client_id,
+            "looser_to_winner_card" : str(self.looser_to_winner_card),
+            "winner_to_looser_card" : str(self.winner_to_looser_card)
+        }
   
     def __str__(self):
         return f"Game with {len(self.players_dict)} players, Round: {self.current_round} - Scores: {self.scores}"

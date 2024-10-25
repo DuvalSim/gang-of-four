@@ -22,10 +22,10 @@ class RoomManager:
         self.active_rooms[room_id] = Room(room_id)
         return room_id
 
-    def join_room(self, room_id: uuid.UUID, client_id):
+    def join_room(self, room_id: uuid.UUID, client_id, username: str):
 
         room = self.active_rooms.get(room_id)
-        new_player = Player(client_id=client_id)
+        new_player = Player(client_id=client_id, username=username)
         if room is None:
             raise ValueError(f"error while joining room: room [{room_id}] does not exist")
         
@@ -37,11 +37,17 @@ class RoomManager:
         
         room.add_player(new_player)
             
-        
     def get_players(self, room_id):
         room = self.active_rooms.get(room_id)
         if room is not None:
-            return [player.client_id for player in room.get_players()]
+            return room.get_players()
+        else:
+            raise ValueError(f"No such room [{room_id}]")
+        
+    def get_players_info(self, room_id):
+        room = self.active_rooms.get(room_id)
+        if room is not None:
+            return [player.get_public_info() for player in room.get_players()]
         else:
             raise ValueError(f"No such room [{room_id}]")
         

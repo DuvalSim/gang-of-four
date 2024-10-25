@@ -1,3 +1,36 @@
 changer client id par un truc coté client
 
 Sinon, quand on se reco ça marche jamais
+
+
+
+to do : faire des callback quand on appelle le serv pour déclencher des erreurs
+
+
+Dernier joueur joue:
+
+game:play >> OK
+
+Retour:
+----------------------------------
+
+game:cards
+
+game:status (avec interround info)
+
+	GameRoom: if interround >> display scores for 10s
+				Display interround info (intel change avec untel)
+
+>> card_exchange
+
+<< game_status if GameStatus.card_exchange >> afficher les infos la dessus
+
+>> game:play par le joueur
+<< gameStatus
+
+---------------------------------
+
+------------------------------------------------
+
+
+Mettre l'affichage temporaire au niveau de Game Room pour désactiver les boutons pendant ce temps

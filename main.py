@@ -15,10 +15,9 @@ app = socketio.ASGIApp(sio)
 room_manager = RoomManager()
 
 # Handle client connection
-@sio.event
+@sio.on('connect')
 async def connect(sid, environ):
     print(f'Client {sid} connected')
-    await sio.emit('connect_ack', {"client_id": sid}, to=sid)
 
 # Handle client disconnection
 @sio.event
@@ -28,17 +27,23 @@ async def disconnect(sid):
 # Handle a move from a player
 @sio.on('room:create')
 async def create_room(sid, data):
+
     room_id = room_manager.create_room()
-    
+    username = data["username"]
+    user_id = data["user_id"]
     
     try:
-        room_manager.join_room(room_id=room_id, client_id=sid)
+        room_manager.join_room(room_id=room_id, client_id=user_id, username= username)
         await sio.enter_room(sid=sid, room=room_id)
-        response_data = {"room_id": room_id}
+
+        response_data = {"room_id": room_id, "players": room_manager.get_players_info(room_id)}
         await sio.emit('room:create', response_data, sid)
+        
     except Exception as e:
         print(f'Error while creating room: {e}')
         await sio.emit('room:create', {'error': str(e)}, sid)
+
+    print('send')
 
     
 
@@ -46,18 +51,21 @@ async def create_room(sid, data):
 async def join_room(sid, data):
 
     room_id = data["room_id"]
+    username = data["username"]
 
     try:
-        room_manager.join_room(room_id=room_id, client_id=sid)
+        room_manager.join_room(room_id=room_id, client_id=sid, username=username)
         await sio.enter_room(sid=sid, room=room_id)
+
+        response_data = {"room_id": room_id, "players": room_manager.get_players_info(room_id)}
+        await sio.emit('room:join', response_data, to=sid)
+
+        await sio.emit('room:update', response_data, to=room_id, skip_sid=sid)
+
     except Exception as e:
         print(f'Error while joining room: {e}')
         await sio.emit('room:join', {'error': str(e)}, sid)
         return 
-
-    await sio.emit('room:join', {"room_id": room_id, "players": room_manager.get_players(room_id)}, to=sid)
-
-    await sio.emit('room:udpate', {"room_id": room_id, "players": room_manager.get_players(room_id)}, to=room_id)
 
 
 @sio.on('game:start')
@@ -124,12 +132,13 @@ async def card_exchange(sid, data):
     
     room_id = data["room_id"]
     card_to_exchange = data["card_to_give"]
+    client_id = data["client_id"]
 
     try:
         current_room = room_manager[room_id]
         winner_to_looser_card = Card.build_from_str(card_to_exchange)
 
-        current_room.current_game.complete_card_exchanges(sid, winner_to_looser_card)
+        current_room.current_game.complete_card_exchanges(client_id, winner_to_looser_card)
     
     except Exception as e:
         print("Error:", str(e))
@@ -137,10 +146,18 @@ async def card_exchange(sid, data):
         raise
 
     else:
-        card_exchange_data = {"winner": sid, "looser": current_room.current_game.last_round_looser.client_id ,"winner_to_looser_card": card_to_exchange}
+        # card_exchange_data = {"winner": sid, "looser": current_room.current_game.last_round_looser.client_id ,"winner_to_looser_card": card_to_exchange}
 
-        await sio.emit('game:card_exchange', card_exchange_data, room=room_id)
+        card_exchange_data = current_room.current_game.get_card_exchange_info()
+        response_data = current_room.current_game.get_status()
+        response_data["card_exchange_info"] = card_exchange_data
 
+        # Send cards to looser and winner:
+        for player in [current_room.get_player(card_exchange_data["last_looser"]), current_room.get_player(card_exchange_data["last_winner"])]:
+            data = player.get_status()
+            await sio.emit('game:cards', data, to=player.client_id)
+
+        await sio.emit('game:status', response_data, room=room_id)
 
 
 
