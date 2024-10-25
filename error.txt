@@ -1,0 +1,34 @@
+
+> four-of-gang-frontend@0.1.0 start
+> react-scripts start
+
+Starting the development server...
+
+Failed to compile.
+
+Module not found: Error: Can't resolve '@/components/ui/' in '/home/sysaru/Code/four-of-gang-frontend/src'
+ERROR in ./src/App.js 6:0-91
+Module not found: Error: Can't resolve '@/components/ui/' in '/home/sysaru/Code/four-of-gang-frontend/src'
+
+ERROR in ./src/App.js 7:0-38
+Module not found: Error: Can't resolve './CreateRoom' in '/home/sysaru/Code/four-of-gang-frontend/src'
+
+ERROR in ./src/App.js 8:0-34
+Module not found: Error: Can't resolve './JoinRoom' in '/home/sysaru/Code/four-of-gang-frontend/src'
+
+ERROR in ./src/App.js 9:0-38
+Module not found: Error: Can't resolve './GameStatus' in '/home/sysaru/Code/four-of-gang-frontend/src'
+
+ERROR in ./src/App.js 10:0-36
+Module not found: Error: Can't resolve './GameBoard' in '/home/sysaru/Code/four-of-gang-frontend/src'
+
+ERROR in ./src/App.js 11:0-38
+Module not found: Error: Can't resolve './GameAction' in '/home/sysaru/Code/four-of-gang-frontend/src'
+
+ERROR in ./src/App.js 12:0-42
+Module not found: Error: Can't resolve './ErrorDisplay' in '/home/sysaru/Code/four-of-gang-frontend/src'
+
+ERROR in ./src/App.js 13:0-38
+Module not found: Error: Can't resolve './PlayerHand' in '/home/sysaru/Code/four-of-gang-frontend/src'
+
+webpack compiled with 8 errors
