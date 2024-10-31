@@ -1,61 +1,112 @@
 import React from 'react';
-import Player from './Player';
-import GameBoard from './GameBoard';
-import RoomInfo from './RoomInfo';
-import GameStatus from './GameStatus';
-import PlayerActionButton from './PlayerActionButton';
+import { Button, Box, Typography, IconButton, Avatar, Badge, Snackbar, Alert } from '@mui/material';
+import { ContentCopy, Star } from '@mui/icons-material';
+import Grid from '@mui/material/Grid2';
 
-// Need to retrieve nbCards
-const WaitingRoom = ({ currentUserId, roomInfo, onStartGame, isRoomManager }) => {
-    const {room_id, players} = roomInfo  
-    
-    
-    const otherPlayers = players.filter(player => player.client_id !== currentUserId);  // Filter out the current user
-    const currentPlayer = players.find(player => player.client_id === currentUserId);
+const WaitingRoom = ({ currentUserId, roomInfo, onStartGame }) => {
+    const { roomId, players, roomLeader } = roomInfo;
 
-    console.log("Creating Waiting Room:", currentUserId, roomInfo, isRoomManager)
+    const [openSnack, setOpenSnack] = React.useState(false);
+
+    const handleClose = (event, reason) => {
+        if (reason === 'clickaway') {
+        return;
+        }
+
+        setOpenSnack(false);
+    };
+
+    const copyToClipboard = () => {
+        navigator.clipboard.writeText(roomId);
+        setOpenSnack(true);
+    };
 
     return (
-        <div className="game-room">
-            {/* Top player */}
-            {otherPlayers[0] && (
-                <div className="player-container top">
-                    <Player 
-                    username={otherPlayers[0].username} 
-                    position="top" />
-                </div>
-            )}
+        <div>
+            <Snackbar
+                anchorOrigin={{vertical: "top", horizontal:"center"}} 
+                open={openSnack}
+                autoHideDuration={2000}
+                onClose={handleClose}>
+                    <Alert severity="success" display="flex" flexDirection="center">Room Id copied to clipboard</Alert>
+            </Snackbar>
 
-            {/* Right player */}
-            {otherPlayers[1] && (
-                <div className="player-container right">
-                    <Player 
-                    username={otherPlayers[1].username}
-                    position="right" />
-                </div>
-            )}
+        <Box
+            sx={{
+                mt: 8, // Responsive top margin
+                px: 3,
+                py: 3,
+                maxWidth: 400,
+                marginX: 'auto', // Centers the Box horizontally
+                textAlign: 'center',
+                backgroundColor: '#f9f9f9',
+                borderRadius: 2,
+                boxShadow: 3,
+            }}
+        >
+            {/* Room Code and Message */}
+            <Box sx={{ mb: 2 }}>
+                <Typography variant="h5" color="textSecondary">
+                    Waiting for other players..
+                </Typography>
+                
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mt: 1 }}>
+                    <Typography variant="body1" color="textSecondary">
+                        Room Id:
+                    </Typography>
+                    <Typography variant="body1" component="span" sx={{ mr: 1, ml:4 }}>{roomId}</Typography>
+                    <IconButton onClick={copyToClipboard} size="small">
+                        <ContentCopy fontSize="small" />
+                    </IconButton>
+                </Box>
+            </Box>
 
-            {/* Left player */}
-            {otherPlayers[2] && (
-                <div className="player-container left">
-                    <Player
-                    username={otherPlayers[2].username}
-                    position="left" />
-                </div>
-            )}
+            {/* Players Grid */}
+            <Grid container spacing={2} justifyContent="center" sx={{ mb: 3 }}>
+                {players.map((player, index) => (
+                    <Grid key={index} size={6} display="flex" flexDirection="column" alignItems="center">
+                        <Badge
+                        overlap="circular"
+                        color= {(player.user_id === roomLeader) ? "primary" : null}
+                        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+                        badgeContent={(player.user_id === roomLeader) ? <Typography>Owner</Typography> : ""} //<Star color="#FFFF00" />
+                        >
+                            <Avatar
+                                    src={player.avatar}
+                                    sx={{
+                                        width: 70,
+                                        height: 70,
+                                        backgroundColor: player.avatar ? 'transparent' : '#eee',
+                                    }}
+                                >
+                                    {!player.avatar && <Typography variant="h4" color="textSecondary">?</Typography>}
+                            </Avatar>
+                        </Badge>
+                        <Typography variant="body2" sx={{ mt: 1, color: player.name ? 'textPrimary' : 'textSecondary' }}>
+                            {player.username}
+                        </Typography>
+                    </Grid>
+                ))}
+            </Grid>
 
-            {/* Conditionally render RoomInfo or GameStatus */}
-            <div className="game-board-container">
-                <RoomInfo roomId={room_id} players={players} isRoomManager={isRoomManager} onStartGame={onStartGame} />
-           </div>
-
-            {/* Current user at the bottom */}
-            <div className="player-container bottom">
-                <Player 
-                    username={currentPlayer.username} 
-                    position="bottom"
-                />
-            </div>
+            {/* Start Game Button and Player Count */}
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                {(currentUserId === roomLeader) ? (<Button
+                    variant="contained"
+                    color="primary"
+                    onClick={onStartGame}
+                    disabled={(players.filter(p => p.username).length < 2)}
+                >
+                    Start Game
+                </Button>
+                ) : null }
+                <Box sx={{ ml: 2 }}>
+                    <Typography variant="body1" color="textSecondary">
+                        Current players: {players.filter(p => p.username).length}/4
+                    </Typography>
+                </Box>
+            </Box>
+        </Box>
         </div>
     );
 };

@@ -16,7 +16,9 @@ const GameRoom = ({ currentUserId, roomInfo, setErrorMessage, gameStatus, userCa
 
     
 
-    const {room_id, players} = roomInfo 
+    const {roomId, players, roomLeader} = roomInfo
+
+    console.log("Creating gameRoom", roomInfo, gameStatus)
     
 
     const selectCard = (index) => {
@@ -35,20 +37,20 @@ const GameRoom = ({ currentUserId, roomInfo, setErrorMessage, gameStatus, userCa
     const buildPlayerDict = (gameStatus, players) => {
         let playerInfoDict = {};
         players.forEach(player => {
-            playerInfoDict[player.client_id] = {
+            playerInfoDict[player.user_id] = {
                 username : player.username,
-                nbCards : gameStatus.players_info[player.client_id].nb_cards,
-                score: gameStatus.players_info[player.client_id].score,
+                nbCards : gameStatus.players_info[player.user_id].nb_cards,
+                score: gameStatus.players_info[player.user_id].score,
             }
         });
 
         return playerInfoDict;
     }
 
-    const playersGameInfo =  players.map(player => ({ ...player, 'nbCards': gameStatus.players_info[player.client_id].nb_cards, 'score':gameStatus.players_info[player.client_id].score }))    
+    const playersGameInfo =  players.map(player => ({ ...player, 'nbCards': gameStatus.players_info[player.user_id].nb_cards, 'score':gameStatus.players_info[player.user_id].score }))    
     
-    const otherPlayers = playersGameInfo.filter(player => player.client_id !== currentUserId);  // Filter out the current user
-    const currentPlayer = playersGameInfo.find(player => player.client_id === currentUserId);
+    const otherPlayers = playersGameInfo.filter(player => player.user_id !== currentUserId);  // Filter out the current user
+    const currentPlayer = playersGameInfo.find(player => player.user_id === currentUserId);
 
     const interRoundInfo = gameStatus.inter_round_info ? gameStatus.inter_round_info : null;
     const cardExchangeInfo = gameStatus.card_exchange_info ? gameStatus.card_exchange_info : null;
