@@ -34,3 +34,10 @@ game:status (avec interround info)
 
 
 Mettre l'affichage temporaire au niveau de Game Room pour désactiver les boutons pendant ce temps
+
+
+Joueur >> GameRoom
+Etat joueur >> actif ?
+
+
+check comment on identifie le joueur

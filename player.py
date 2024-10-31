@@ -4,10 +4,14 @@ import copy
 
 class Player:
 
-    def __init__(self, client_id, username) -> None:
+    def __init__(self, client_id, username = None) -> None:
         self.client_id = client_id
         self.username = username
-        self.cards = List[Card]
+        self.cards : List[Card] = []
+        self.is_active = True
+
+    def set_active(self, is_active):
+        self.is_active = is_active
 
     def add_cards(self, cards: List[Card]):
         self.cards += cards
@@ -41,7 +45,7 @@ class Player:
         return {"cards": [str(card) for card in self.get_cards_in_hand()]}
     
     def get_public_info(self):
-        return {"client_id": self.client_id, "username": self.username}
+        return {"user_id": self.client_id, "username": self.username, "active":self.is_active}
     
     def get_best_card(self) -> Card:
         return max(self.cards)

@@ -1,9 +1,12 @@
 # managers/room_manager.py
 
-import uuid
 from typing import List
 from room import Room
 from player import Player
+from socket_manager import SocketManager
+from nanoid import generate
+
+socket_manager = SocketManager()
 
 class RoomManager:
     _instance = None
@@ -15,14 +18,21 @@ class RoomManager:
 
     def __init__(self):
         if not hasattr(self, "active_rooms"):
-            self.active_rooms: dict[uuid.UUID, Room] = {}
+            self.active_rooms: dict[str, Room] = {}
 
-    def create_room(self) -> uuid.UUID:
-        room_id = str(uuid.uuid4())
+    def __generate_id(self) -> str:
+        new_id = generate(size=10)
+        while new_id in self.active_rooms.keys():
+            new_id = new_id = generate(size=10)
+        
+        return new_id
+    
+    def create_room(self) -> str:
+        room_id = self.__generate_id()
         self.active_rooms[room_id] = Room(room_id)
         return room_id
 
-    def join_room(self, room_id: uuid.UUID, client_id, username: str):
+    def join_room(self, room_id: str, socket_id, client_id, username: str):
 
         room = self.active_rooms.get(room_id)
         new_player = Player(client_id=client_id, username=username)
@@ -35,7 +45,64 @@ class RoomManager:
         if new_player in room.get_players():
             raise ValueError("Player already in room")
         
+        if socket_manager.get_user_room_id(user_id=client_id) is not None:
+            raise ValueError("Player already in a room")
+        
         room.add_player(new_player)
+
+        socket_manager.add_user(user_id=client_id, socket_id=socket_id, room_id=room_id)
+
+    
+    def leave_room(self, room_id: str, user_id):
+        room = self.active_rooms.get(room_id)
+        if room is None:
+            raise ValueError(f"error while joining room: room [{room_id}] does not exist")
+        
+        if user_id not in room.players.keys():
+            raise ValueError("Player not in room")
+        
+        room.remove_player(user_id)
+        socket_manager.remove_user(user_id=user_id)
+
+        if len(room.get_players()) == 0:
+            self.remove_room(room_id)
+
+    def get_room_from_user(self, user_id) -> str:
+        return socket_manager.get_user_room_id(user_id=user_id)
+    
+    def remove_room(self, room_id):
+
+        for player in self.active_rooms[room_id].get_players():
+            socket_manager.remove_user(player.client_id)
+
+        del self.active_rooms[room_id]
+
+    async def on_user_disconnect(self, socket_id, sio):
+        user_id = socket_manager.get_user_from_socket(socket_id=socket_id)
+        room_id = self.get_room_from_user(user_id)
+
+        if room_id and user_id :
+            current_room = self.active_rooms[room_id]
+            if current_room and current_room.current_game:
+                self.set_inactive_user(user_id)
+            elif current_room:
+                current_room.remove_player(user_id)
+                socket_manager.remove_user(user_id)
+                if len(current_room.get_players()) == 0:
+                    self.remove_room(room_id)
+                else:
+                    print("Change room, send update")
+                    await sio.emit("room:update", current_room.get_room_info() , room=room_id)
+
+
+    def set_inactive_user(self, user_id):
+        room_id = self.get_room_from_user(user_id)
+        if room_id and user_id :
+            self.active_rooms[room_id].get_player(user_id).set_active(False)
+            if not any([player.is_active for player in self.active_rooms[room_id].get_players()]):
+                self.remove_room(room_id)                
+                print(f"Room [{room_id}] deleted")
+    
             
     def get_players(self, room_id):
         room = self.active_rooms.get(room_id)

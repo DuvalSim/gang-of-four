@@ -69,6 +69,9 @@ class Game:
 
         # TODO: make sure first hand has 1 mult in hand
 
+    def is_restartable(self) -> bool:
+        return self.game_status == self.GameStatus.GameEnd
+
     def set_current_player(self, new_idx: int):
         self.current_turn_player_idx = new_idx
 
