@@ -67,9 +67,9 @@ const WaitingRoom = ({ currentUserId, roomInfo, onStartGame }) => {
                     <Grid key={index} size={6} display="flex" flexDirection="column" alignItems="center">
                         <Badge
                         overlap="circular"
-                        color= {(player.user_id === roomLeader) ? "primary" : null}
-                        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-                        badgeContent={(player.user_id === roomLeader) ? <Typography>Owner</Typography> : ""} //<Star color="#FFFF00" />
+                        color= {(player.user_id === roomLeader) ? "primary" : ""}
+                        anchorOrigin={{vertical:'top', horizontal:'right'}}
+                        badgeContent={(player.user_id === roomLeader) ? "Owner" : ""} //<Star color="#FFFF00" />
                         >
                             <Avatar
                                     src={player.avatar}

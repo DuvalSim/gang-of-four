@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Card Test</title>
+  <style>
+
+    /* CSS code from your example */
+
+    .cards {
+      display: flex;
+      /* align-content: center; */
+      justify-content: center;
+      width: 100%;
+    }
+
+    .cardWrapper {
+      overflow: hidden;
+    }
+
+    .cardWrapper:last-child, .cardWrapper:hover {
+        overflow: visible;
+    }
+
+    .card {
+        min-width: 2em;
+        height: auto;
+        border-radius: 0.5em;
+        border: solid #666 1px;
+        background-color: #ccc;
+      
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items:start;
+    }
+  </style>
+</head>
+<body>
+
+<div class="cards">
+  <div class="cardWrapper">
+    <div class="card" onclick="showCardMessage(1)">
+        <img
+        
+        src="./src/images/1-g.png"
+        alt="test"
+    />
+    </div>
+  </div>
+  <div class="cardWrapper">
+    <div class="card" onclick="showCardMessage(2)">
+        <img
+        
+        src="./src/images/1-g.png"
+        alt="test"
+    /></div>
+  </div>
+  <div class="cardWrapper">
+    <div class="card" onclick="showCardMessage(3)">
+        <img
+        
+        src="./src/images/1-g.png"
+        alt="test"
+    /></div>
+  </div>
+  <div class="cardWrapper">
+    <div class="card" onclick="showCardMessage(4)">
+        <img
+        
+        src="./src/images/1-g.png"
+        alt="test"
+    /></div>
+  </div>
+  <div class="cardWrapper">
+    <div class="card" onclick="showCardMessage(5)">
+        </div>
+  </div>
+</div>
+
+<script>
+  function showCardMessage(cardNumber) {
+    alert("You clicked on Card " + cardNumber);
+  }
+</script>
+
+</body>
+</html>

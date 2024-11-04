@@ -1,43 +1,13 @@
-/* src/index.css */
-
-/* src/index.css */
-
-/* Adjusting styles for the App title */
-h1 {
-    margin: 0;  /* Remove default margin from the heading */
-    padding: 10px 0;  /* Add some padding if needed but keep it minimal */
-    text-align: center;  /* Center the heading */
-}
-
-/* Game room container - ensures the entire game area is centered */
-.game-room {
-    position: relative;
-    width: 100%;
-    height: calc(100vh - 50px);  /* Subtract the height of the heading */
-    display: flex;
-    justify-content: center;  /* Center horizontally */
-    align-items: center;      /* Center vertically */
-    overflow: hidden;         /* Prevent any overflow */
-}
-
-/* Responsive rectangular game board container with a 4:3 aspect ratio */
-.game-board-container {
-    width: 50vw;   /* Responsive width based on viewport width */
-    height: 37.5vw;  /* Keep a 4:3 aspect ratio */
-    max-width: 800px;  /* Maximum width for large screens */
-    max-height: 600px; /* Maximum height for large screens */
-    min-width: 400px;  /* Minimum width for small screens */
-    min-height: 300px; /* Minimum height for small screens */
-    background-color: #f0f0f0;
-    border: 2px solid #ccc;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 20px;
-    box-sizing: border-box;
-}
-
 /* RoomInfo or GameStatus content inside the game board */
+body, #app {
+    margin: 0;
+    padding: 0;
+    /* min-height: 100vh; */
+    /* width: 70vw;
+    height: 70vh; */
+}
+
+
 .room-info, .game-status {
     width: 100%;
     height: 100%;
@@ -49,10 +19,6 @@ h1 {
     font-size: medium;
 }
 
-.room-info h2, .game-status h2 {
-    font-size: 1.2vw;
-}
-
 .room-info ul, .game-status ul {
     list-style: none;
     padding: 0;
@@ -60,6 +26,7 @@ h1 {
 }
 
 /* Player container to position players around the board */
+
 .player-container {
     position: absolute;
     display: flex;
@@ -67,6 +34,13 @@ h1 {
     align-items: center;
     justify-content: center;
 }
+
+/* Bottom player (current user)
+.player-container.bottom {
+    bottom: 5%;
+    left: 50%;
+    transform: translateX(-50%);
+} */
 
 /* Upsized card images and rotated vertically with overlap */
 /* .card-img {
@@ -86,57 +60,6 @@ h1 {
 .player-cards img:nth-child(n+3) {
     z-index: 3;  
 } */
-
-.player-cards {
-    display: flex;
-    justify-content: center;
-    margin-bottom: 10px;  /* Space between cards and the player image */
-}
-
-/* Card images - upsized and overlapping */
-.card-img {
-    width: 60px;
-    height: auto;
-    
-}
-
-
-
-/* Specific card rotations for each position */
-
-/* Bottom player cards (current user) - face up and rotated 90 degrees */
-.bottom-card {
-    margin-right: -30px;
-    transform: rotate(90deg);
-}
-
-/* Top player cards - face down and rotated 90 degrees */
-.top-card {
-    margin-right: -30px;
-    transform: rotate(270deg);
-}
-
-/* Right player cards - face down and rotated 0 degrees (normal) */
-.right-card {
-    margin-top: -10px;
-    transform: rotate(0deg);  /* No rotation needed */
-}
-
-/* Left player cards - face down and rotated 180 degrees */
-.left-card {
-    margin-top: -10px;
-    transform: rotate(180deg);  /* Flipped */
-}
-
-.right-cards,
-.left-cards {
-    flex-direction: column;
-    align-items: center;
-}
-
-.selected {
-    translate: 0 -20px;  /* Move the selected card upwards */
-}
 
 /* Player positions */
 
@@ -164,10 +87,4 @@ h1 {
     transform: translateY(-50%);
 }
 
-/* Bottom player (current user) */
-.player-container.bottom {
-    position: absolute;
-    bottom: 5%;
-    left: 50%;
-    transform: translateX(-50%);
-}
+

@@ -1,11 +1,10 @@
 import React, {useState, useEffect} from 'react';
 import Card from './Card';
 
-
 const GameBoard = ({ lastHand, interRoundInfo, cardExchangeInfo, playersInfo }) => {
 
     return (
-        <div>
+        <div className='game-board'>
             {interRoundInfo ? (
                 <p>
                     Round ended. Winner: {playersInfo[interRoundInfo.last_winner].username} <br/>

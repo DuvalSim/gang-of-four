@@ -6,6 +6,8 @@ import PlayerActionButton from './PlayerActionButton';
 import socket from '../socket';
 import Scoreboard from './ScoreBoard';
 
+import "../css/game_room.css"
+import gameBoardImg from "../images/gameBoard.png";
 
 
 
@@ -20,6 +22,10 @@ const GameRoom = ({ currentUserId, roomInfo, setErrorMessage, gameStatus, userCa
 
     console.log("Creating gameRoom", roomInfo, gameStatus)
     
+    useEffect(() => {
+        document.body.style.overflow = "hidden"
+        return () =>     document.body.style.overflow = "auto"
+      }, [])
 
     const selectCard = (index) => {
         console.log("Card selected:", index)
@@ -90,14 +96,6 @@ const GameRoom = ({ currentUserId, roomInfo, setErrorMessage, gameStatus, userCa
         }
     }, [gameStatus]);
 
-    // useEffect(() => {
-    //     if (showGameResults) {
-    //       setTimeout(() => {
-    //         setShowGameResults(false);
-    //       }, 10000);
-    //     }
-    //   }, [showGameResults]);
-
 
     console.log("Creating GameRoom:", players)
 
@@ -137,6 +135,7 @@ const GameRoom = ({ currentUserId, roomInfo, setErrorMessage, gameStatus, userCa
             )} */}
 
             <div className="game-board-container">
+                    <img src={gameBoardImg} alt="game board" className='game-board-img'/>
                     {showGameResults ?
                         (<Scoreboard currentUserId={currentUserId}
                             players={buildPlayerDict(gameStatus, players)}
@@ -155,7 +154,7 @@ const GameRoom = ({ currentUserId, roomInfo, setErrorMessage, gameStatus, userCa
             </div>
 
             {/* Current user at the bottom */}
-            <div className="player-container bottom">
+            <div className="user-container">
                 <Player 
                     username={currentPlayer.username} 
                     cards={userCards} 
@@ -163,8 +162,7 @@ const GameRoom = ({ currentUserId, roomInfo, setErrorMessage, gameStatus, userCa
                     position="bottom"
                     onCardSelected={selectCard}
                 />
-            </div>            
-            <div className="player-buttons">
+                <div className="player-buttons-container">
                 { interRoundInfo && interRoundInfo.last_winner === currentUserId ?
                     <PlayerActionButton text="Exchange Card" onClick={() => exchangeCard()}/>
                 
@@ -175,6 +173,8 @@ const GameRoom = ({ currentUserId, roomInfo, setErrorMessage, gameStatus, userCa
                     </React.Fragment>
                 }
             </div>
+            </div>            
+            
         </div>
     );
 };

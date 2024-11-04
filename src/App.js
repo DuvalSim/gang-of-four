@@ -286,6 +286,7 @@ const App = () => {
     
 
     return (
+        <div id="app">
         
         <ThemeProvider theme={testTheme}>
             <ErrorDisplay errorMessage={errorMessage}/>
@@ -307,6 +308,7 @@ const App = () => {
                     :   null}
             
         </ThemeProvider>
+        </div>
     );
 };
 

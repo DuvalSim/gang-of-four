@@ -8,7 +8,9 @@ const PlayerActionButton = ({ text, onClick, disabled }) => {
         <div className="player-action-button">
             <Button onClick={onClick}
             variant="contained"
-            disabled = {disabled}>{text}</Button>
+            disabled = {disabled}
+            fullWidth
+            className='player-action-button'>{text}</Button>
         </div>
     );
 };

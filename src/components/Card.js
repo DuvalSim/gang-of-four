@@ -16,12 +16,12 @@ const Card = ({ name, selected, idx, position, onSelect}) => {
             )
         } else {
             return (
-                <img
-                    // idx={idx}
-                    src={require(`../images/cards/${name}.png`)}  // Show face-up cards for current user
-                    alt={name}
-                    className={`card-img ${position}-card ${selected ? 'selected' : ''}`}
-                />
+                    <img
+                        // idx={idx}
+                        src={require(`../images/cards/${name}.png`)}  // Show face-up cards for current user
+                        alt={name}
+                        className={`card-img ${position}-card ${selected ? 'selected' : ''}`}
+                    />
             )
         }
     };

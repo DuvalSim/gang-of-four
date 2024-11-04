@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { TextField, Button, Box, Typography } from '@mui/material';
 import Logo from './Logo';
+import "../css/home_page.css"
 
 const HomePage = ({ createRoom, joinRoom, setErrorMessage }) => {
     const [usernameInput, setUsernameInput] = useState('');
@@ -33,7 +34,7 @@ const HomePage = ({ createRoom, joinRoom, setErrorMessage }) => {
 
     return (
 
-        <div>       
+        <div className='HomePage'>       
 
             <Box 
                 display="flex" 
