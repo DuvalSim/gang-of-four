@@ -28,7 +28,7 @@ const WaitingRoom = ({ currentUserId, roomInfo, onStartGame }) => {
                 open={openSnack}
                 autoHideDuration={2000}
                 onClose={handleClose}>
-                    <Alert severity="success" display="flex" flexDirection="center">Room Id copied to clipboard</Alert>
+                    <Alert severity="success" display="flex">Room Id copied to clipboard</Alert>
             </Snackbar>
 
         <Box

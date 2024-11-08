@@ -14,7 +14,31 @@ const STORAGE_KEYS = {
     ROOM_ID: 'cardGame_roomId'
 };
 
+const mockGameStatus= {
+    game_is_on: false,
+    player_to_play: "zIvBOQn7m3ZF4itpAAAD",
+    current_round: "2",
+    play_direction: "counter_clockwise",
+    players_info: {
+        kGv7YkzV8Sfbhw_RAAAB: {
+            nb_cards: 16,
+            score: 160
+        },
+        zIvBOQn7m3ZF4itpAAAD: {
+            nb_cards: 0,
+            score: 0
+        }
+    },
+    previous_hand: [
+        "Phoenix-Y"
+    ],
+    game_winners: [
+        "zIvBOQn7m3ZF4itpAAAD"
+    ]
+}
+
 const App = () => {
+    
     
     const [roomInfo, setRoomInfo] = useState(null);
     const [gameState, setGameState] = useState(null);
@@ -55,8 +79,7 @@ const App = () => {
             if (data.error) {
                 console.log("Could not reconnect:", data)
                 // Clear stored data if the room no longer exists
-                clearStoredData();
-                
+                clearStoredData();               
             } else {
                 setErrorMessage('');
                 setRoomInfo(parseRoomInfo(data.room_info));
@@ -282,6 +305,9 @@ const App = () => {
         localStorage.removeItem(STORAGE_KEYS.ROOM_ID);
         setClientId(socket.id);
         setRoomId(null);
+        setRoomInfo(null);
+        setGameState(null);
+        setUserCards([]);
     };
     
 

@@ -1,10 +1,19 @@
 import React from 'react';
 import { useState } from 'react';
 import Card from './Card';
-import { Typography } from '@mui/material';
-// import '../images/cards/*'
+import { Chip, Avatar } from '@mui/material';
+import styled from 'styled-components'
+import SortButton from './SortButton';
 
-const Player = ({ username, cards, nbCards, score, position, onCardSelected }) => {
+const CardsContainer = styled.div`
+    display: flex;
+    width: 100%;
+    justify-content: center;
+    filter: ${props => props.$highlighted ? "drop-shadow(0 0 20px white)" : ""};
+`
+
+const Player = ({ username, cards, nbCards, score, position, onCardSelected, isTurnToPlay, onSortHand }) => {
+
 
     const renderPlayerCards = () => {
 
@@ -12,7 +21,7 @@ const Player = ({ username, cards, nbCards, score, position, onCardSelected }) =
 
         if (cards) {
             return cards.map(card => (
-                <div className='card'>
+                <div className={`card ${card.selected ? 'selected' : ''}`} key={card.idx}>
                 <Card
                     name={card.name}
                     selected={card.selected}
@@ -27,12 +36,20 @@ const Player = ({ username, cards, nbCards, score, position, onCardSelected }) =
 
     return (
         <div className="player">
-            <div className={`player-cards-${position}`}>
+            <CardsContainer $highlighted={isTurnToPlay}>
                 {((cards && cards.length > 0) || (nbCards && nbCards > 0))  && renderPlayerCards()}  {/* Display cards if available */}
-            </div>
-            <div className="player-info">
-                <Typography variant='body1'>{username}</Typography>
-                <Typography variant='body2'>Score: {score}</Typography>
+            </CardsContainer>
+            <div className="player-info-container">
+                <Chip
+                    avatar={<Avatar>{username.charAt(0)}</Avatar>}
+                    label={username}
+                    variant="outlined"
+                    color="primary"
+                />
+
+                <SortButton onSortHand={onSortHand}/>
+                
+                <Chip label={`Score: ${score}`} color='primary' />
             </div>
         </div>
     );

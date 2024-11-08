@@ -4,14 +4,15 @@ const Card = ({ name, selected, idx, position, onSelect}) => {
     
     const renderCard = () => {
 
-        if (onSelect !== null) {
+        if (onSelect) {
             return (
                 <img
                     // idx={idx}
                     src={require(`../images/cards/${name}.png`)}  // Show face-up cards for current user
                     alt={name}
-                    className={`card-img ${position}-card ${selected ? 'selected' : ''}`}
+                    className={`card-img ${position}-card`}
                     onClick={() => onSelect(idx)}  // Click handler to toggle selection
+                    
                 />
             )
         } else {
@@ -20,7 +21,7 @@ const Card = ({ name, selected, idx, position, onSelect}) => {
                         // idx={idx}
                         src={require(`../images/cards/${name}.png`)}  // Show face-up cards for current user
                         alt={name}
-                        className={`card-img ${position}-card ${selected ? 'selected' : ''}`}
+                        className={`card-img ${position}-card`}
                     />
             )
         }

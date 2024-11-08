@@ -2,8 +2,13 @@ import { createTheme } from "@mui/material";
 
 export const testTheme = createTheme({
     palette: {
-        primary: {
-          main:"#ffeb3b"},
+      action: {
+        disabledBackground: '#6f6f6f',
+      },
+      primary: {
+          main:"#ffeb3b",
+          },
         secondary: {main: "#ff1744"},
       },
+    
 });
