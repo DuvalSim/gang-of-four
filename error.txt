@@ -1,5 +1,6 @@
 
 Implémenter le last card
+>> Mettre un bouton call et un bouton counter
 
 Implémenter la vérification quand un joueur à plus qu'une cartes
 
@@ -9,3 +10,6 @@ Implémenter quand un joueur veut quitter la partie.
 Afficher tous les rounds sur l'écran de fin + "Game Finished >> You win / You loose"
 
 Faire le drag and drop des cartes
+
+
+Call pendant le tour >> met en mémoire sur le serveur pour activer après le play
