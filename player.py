@@ -41,6 +41,25 @@ class Player:
     def nb_cards_in_hand(self) -> int:
         return len(self.cards)
     
+    def sort_cards(self, sort_method: str) -> List[int]:
+        """Sort player cards according to sort method and returns the sorted order
+
+        Args:
+            sort_method (rank | color) 
+
+        Returns:
+            List[int]: argsort result
+        """
+        if sort_method == "rank":
+            sorted_order = sorted(range(len(self.cards)), key=self.cards.__getitem__)
+        else:
+            # By color first then rank
+            sorted_order = sorted(range(len(self.cards)), key=lambda i : (self.cards[i].suit, self.cards[i].get_rank_value() ))
+
+        self.cards = [self.cards[i] for i in sorted_order]
+
+        return sorted_order
+    
     def get_status(self):
         return {"cards": [str(card) for card in self.get_cards_in_hand()]}
     

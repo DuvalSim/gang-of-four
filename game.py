@@ -16,7 +16,7 @@ class Game:
         GameEnd = 'End'
     
 
-    def __init__(self, players : List[Player], max_score = 100) -> None:
+    def __init__(self, players : List[Player], max_score = 50) -> None:
         if len(players) < 2 or len(players) > 4:
             raise ValueError(f"Need to be 3 or 4 players to play the game")
         
@@ -283,6 +283,7 @@ class Game:
             
             "player_to_play": self.get_current_player().client_id,
             "current_round": self.current_round,
+            "play_direction": "clockwise" if (self.order_of_play == 1) else "counter_clockwise",
             "players_info": {
                 player.client_id: { "nb_cards": player.nb_cards_in_hand(),
                                    "score": self.scores[player.client_id] } 

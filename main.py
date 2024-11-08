@@ -206,6 +206,43 @@ async def card_exchange(sid, data):
 
         await sio.emit('game:status', response_data, room=room_id)
 
+def __is_authorized_user(user_id, sid) -> bool:
+    expected_sid = socket_manager.get_user_socket_id(user_id)
+    if expected_sid is None or (expected_sid != sid):
+        return False
+    else:
+        return True
+    
+@sio.on('card:sort')
+async def card_exchange(sid, data):   
+     
+    try:
+        user_id = data["user_id"]
+        sort_method = data["sort_method"]
+
+        # Check that user is authorized
+        if not __is_authorized_user(user_id, sid):
+            raise ValueError("User not authorized")
+        
+        room_id = room_manager.get_room_from_user(user_id)
+        player = room_manager.active_rooms[room_id].get_player(user_id)
+
+        # return {"sort_order": "]"}
+        
+        sort_order = player.sort_cards(sort_method=sort_method)
+
+        
+        response_data = {
+            "sort_order": sort_order
+        }
+
+        return response_data
+    
+    except Exception as e:
+        print("Got error:", str(e))
+        return {"error" : str(e)}
+    
+
 
 
 async def __send_room_status(current_room: Room):

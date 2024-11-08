@@ -51,14 +51,16 @@ class Card:
         self.rank = rank
         self.suit = suit
         self.is_poulet = self.rank in ("Phoenix", 'Dragon')
-
+    
+    def get_rank_value(self) -> int:
+        return Card.ranks.index(self.rank)
 
     def __eq__(self, value: object) -> bool:
         return (self.rank == value.rank) and (self.suit == value.suit)
     
     def __lt__(self, other:object) -> bool:
-        rank_a_idx = Card.ranks.index(self.rank)
-        rank_b_idx = Card.ranks.index(other.rank)
+        rank_a_idx = self.get_rank_value()
+        rank_b_idx = other.get_rank_value()
         return (rank_a_idx < rank_b_idx) or ((rank_a_idx == rank_b_idx) and (self.suit < other.suit))
     
     def __le__(self, other) -> bool:
@@ -70,6 +72,7 @@ class Card:
     
     def __repr__(self) -> str:
         return f"{self.rank}-{str(self.suit)[0]}"
+    
 
 class Deck:
 
@@ -112,6 +115,11 @@ class Hand:
             result_card_list.append(Card.build_from_str(card_str))
 
         return Hand(result_card_list)
+    
+    # @staticmethod
+    # def sort_cards(card_list: List[Card], sort_method):
+
+
     
     def __init__(self, cards: List[Card]):
         
