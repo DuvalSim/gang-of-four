@@ -243,17 +243,62 @@ async def card_exchange(sid, data):
         return {"error" : str(e)}
     
 
+@sio.on('game:counter_last_card')
+async def counter_last_card(sid, data):
+    try:
+        user_id = data["user_id"]
+
+        # Check that user is authorized
+        if not __is_authorized_user(user_id, sid):
+            raise ValueError("User not authorized")
+        
+        room_id = room_manager.get_room_from_user(user_id)
+        blocked_players_id = room_manager.active_rooms[room_id].current_game.counter_last_card(user_id)
+
+        await sio.emit("game:counter_last_card", {"user_id": user_id, "blocked_players": blocked_players_id}, to=room_id)
+
+        await __send_room_status(room_manager[room_id])
+        
+    
+    except Exception as e:
+        print("Got error:", str(e))
+        return {"error" : str(e)}
+    
+    return {"status": "ok"}
+
+@sio.on('game:call_last_card')
+async def call_last_card(sid, data):
+    try:
+        user_id = data["user_id"]
+
+        # Check that user is authorized
+        if not __is_authorized_user(user_id, sid):
+            raise ValueError("User not authorized")
+        
+        room_id = room_manager.get_room_from_user(user_id)
+        room_manager.active_rooms[room_id].current_game.call_last_card(user_id)
+
+        await sio.emit("game:call_last_card", {"user_id": user_id}, to=room_id)
+        await sio.emit('game:status', room_manager.active_rooms[room_id].current_game.get_status(), room=room_id)
+    
+    except Exception as e:
+        print("Got error:", str(e))
+        return {"error" : str(e)}
+    
+    return {"status": "ok"}
 
 
 async def __send_room_status(current_room: Room):
 
     room_id = current_room.room_id
 
-    await sio.emit('game:status', current_room.get_status(), room=room_id)
+    status_data = room_manager.active_rooms[room_id].current_game.get_status()
+    if status_data.get("inter_round_info", None) is not None:
+        for player in room_manager.active_rooms[room_id].get_players():
+            data = player.get_status()
+            await sio.emit('game:cards', data, to=socket_manager.get_user_socket_id(player.client_id))   
 
-    for player in current_room.get_players():
-        data = {"cards": [str(card) for card in player.get_cards_in_hand()]}
-        await sio.emit('game:cards', data, to=player.client_id)
+    await sio.emit('game:status', status_data , room=room_id)
     
 
 if __name__ == '__main__':

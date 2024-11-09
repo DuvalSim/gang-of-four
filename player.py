@@ -32,7 +32,7 @@ class Player:
             for card in cards_played:
                 current_player_hand.remove(card)
         except Exception:
-            raise ValueError("Some cards not in player hand hand")
+            raise ValueError("Some cards not in player hand")
         self.cards = current_player_hand
 
     def get_cards_in_hand(self) -> List[Card]:
