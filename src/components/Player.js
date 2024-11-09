@@ -17,8 +17,6 @@ const Player = ({ username, cards, nbCards, score, position, onCardSelected, isT
 
     const renderPlayerCards = () => {
 
-        console.log("rendering cards", cards);
-
         if (cards) {
             return cards.map(card => (
                 <div className={`card ${card.selected ? 'selected' : ''}`} key={card.idx}>

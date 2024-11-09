@@ -71,7 +71,6 @@
 .player-buttons-container{
     box-sizing: border-box; /*la width va jusqu'à la bordure et inclue le padding*/
     position: absolute;
-    height: 6em; /*same as card size */
     top:0;
     right: 0;
     width: 15em;

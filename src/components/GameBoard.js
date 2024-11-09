@@ -15,7 +15,7 @@ const GameBoard = ({ lastHand, interRoundInfo, cardExchangeInfo, playersInfo, cu
         
             :  
                     interRoundInfo ? (
-                        <p>
+                        <div>
                             Round ended. Winner: {playersInfo[interRoundInfo.last_winner].username} <br/>
                             Looser: {playersInfo[interRoundInfo.last_looser].username}.
                             Looser gave {interRoundInfo.looser_to_winner_card} to the winner.<br/>
@@ -23,7 +23,8 @@ const GameBoard = ({ lastHand, interRoundInfo, cardExchangeInfo, playersInfo, cu
                             <ul>
                             {Object.keys(playersInfo).map(playerId => (<li>{playersInfo[playerId].username}: {playersInfo[playerId].score}</li>))}
                             </ul>
-                        </p>
+                            Waiting for {playersInfo[interRoundInfo.last_winner].username} to give card to {playersInfo[interRoundInfo.last_looser].username}..
+                        </div>
                     ) : cardExchangeInfo ? (
                         <p>
                             Card exchange before round start:  <br/>
@@ -62,7 +63,7 @@ const GameBoard = ({ lastHand, interRoundInfo, cardExchangeInfo, playersInfo, cu
                     ) : (
                         <p>New cycle -- play any combination</p>
                     )
-            };
+            }
         </div>
     );
 };

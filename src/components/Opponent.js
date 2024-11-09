@@ -15,7 +15,9 @@ const CardContainer = styled.div`
     )
      :  "width: 100%;"}
 
-    filter: ${props => props.$highlighted ? "drop-shadow(0 0 20px white)" : "brightness(0.6)"};
+    filter: ${props => props.$highlighted ? "drop-shadow(0 0 20px white)" 
+                                        : props.$blocked ? "grayscale(100) drop-shadow(0px 0px 10px red)"
+                                        : "brightness(0.6)"};
 
 `
 
@@ -27,8 +29,9 @@ const NbCardInfo = styled.div`
 `
 
 
-const Opponent = ({ username, nbCards, score, position, isCurrentPlayerTurn }) => {
+const Opponent = ({ player, position, isCurrentPlayerTurn }) => {
 
+    const {username, score,nbCards, isBlocked} = player;
     const [showNbCards, setShowNbCards] = useState(false);
 
     const handleMouseEnter = () => {
@@ -40,9 +43,6 @@ const Opponent = ({ username, nbCards, score, position, isCurrentPlayerTurn }) =
     };
 
     const renderOpponentCards = () => {
-
-        console.log("Rendering opponent ", username, isCurrentPlayerTurn);
-
         
         return Array.from({length: nbCards}).map((_, index) => (
             <div className={`opponent-card`} key={index}>
@@ -61,7 +61,10 @@ const Opponent = ({ username, nbCards, score, position, isCurrentPlayerTurn }) =
         <div className={`player-${position}`}>
             {/* <div> */}
 
-            <CardContainer $vertical={position !== "top"} $highlighted={isCurrentPlayerTurn} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
+            <CardContainer $vertical={position !== "top"} 
+            $highlighted={isCurrentPlayerTurn} 
+            $blocked={isBlocked} 
+            onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
             
 
                 <div className={`player-cards-${position}`}>

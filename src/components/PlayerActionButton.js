@@ -1,12 +1,23 @@
 // src/components/RoomInfo.js
-import { Button } from '@mui/material';
+import { Button, useTheme } from '@mui/material';
 import React from 'react';
 
 
-const PlayerActionButton = ({ text, onClick, disabled }) => {
+const PlayerActionButton = ({ text, onClick, disabled, isClicked }) => {
+    const theme = useTheme();
     return (
         <div className="player-action-button">
-            <Button onClick={onClick}
+            <Button 
+
+            color={isClicked ? "secondary" : "primary" }
+            // sx={{
+            //     '&:hover': {
+            //     backgroundColor: isClicked 
+            //         ? theme.palette.secondary.dark 
+            //         : theme.palette.primary.dark,
+            //     },
+            // }}
+            onClick={onClick}
             variant="contained"
             disabled = {disabled}
             fullWidth

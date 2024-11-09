@@ -32,13 +32,75 @@ const playerIdxPositionMap = {
   };
 
 
-
 // Need to retrieve nbCards
 const GameRoom = ({ currentUserId, roomInfo, gameStatus, userCards, setUserCards, playCards, passTurn, exchangeCard}) => {
 
     const [openPlayerAlert, setOpenPlayerAlert] = React.useState(false);
     const [alertText, setAlertText] = React.useState("");
     const [alertSeverity, setAlertSeverity] = React.useState("warning");
+
+    const [lastCardCallDone, setLastCardCallDone ] = useState(false);
+
+    const {roomId, players, roomLeader} = roomInfo;
+
+    const playersGameInfo =  players.map(player => ({ ...player, 
+                                                nbCards : gameStatus.players_info[player.user_id].nb_cards,
+                                                score :gameStatus.players_info[player.user_id].score,
+                                                isSafe:gameStatus.players_info[player.user_id].safe,
+                                                isBlocked:gameStatus.players_info[player.user_id].blocked}))    
+    
+    const currentPlayer = playersGameInfo.find(player => player.user_id === currentUserId);
+    const counterPossible = (playersGameInfo.filter(player => (player.user_id !== currentUserId) 
+                                                && (player.nbCards === 1)
+                                                && !(player.isBlocked || player.isSafe) ).length > 0);
+
+    const interRoundInfo = gameStatus.inter_round_info ? gameStatus.inter_round_info : null;
+    const cardExchangeInfo = gameStatus.card_exchange_info ? gameStatus.card_exchange_info : null;
+
+    const [showCardExchange, setShowCardExchange] = useState(false);
+    const [showGameResults, setShowGameResults] = useState(false);
+    const [showInterRoundInfo, setShowInterRoundInfo] = useState(false);
+
+
+    const nbCardsUnselected = userCards.filter(card => !card.selected).length
+    // TODO
+    const lastCardCallAvailable = (((nbCardsUnselected === 1) || (lastCardCallDone)) && !(currentPlayer.isSafe || currentPlayer.isBlocked));
+
+    // SOCKET HANDLERS:
+
+    useEffect(() => {
+        
+        function onCallLastCard(data) {
+            if (data.error) {
+                displayError(data.error, "warning");            
+            } else {
+                const lastCardUser = data.user_id;
+                // Afficher animation
+                console.log("USER IS SAFE:", lastCardUser);
+            }
+        }
+
+        function onCallCounter(data) {
+            console.log("Got counter_last_card:", data)
+            if (data.error) {
+                displayError(data.error, "warning");            
+            } else {
+                const blockedUsers = data.blocked_players;
+                // Afficher animation
+                console.log("USER HAS BEEN BLOCKED:", blockedUsers);
+            }
+        }
+    
+        socket.on('game:call_last_card', onCallLastCard);
+        
+        socket.on('game:counter_last_card', onCallCounter);
+
+        return () => {
+            socket.off('game:call_last_card', onCallLastCard);
+            socket.off('game:counter_last_card', onCallCounter);
+        };
+
+    },[])
 
 
     const handleClose = (event, reason) => {
@@ -49,10 +111,32 @@ const GameRoom = ({ currentUserId, roomInfo, gameStatus, userCards, setUserCards
         setOpenPlayerAlert(false);
     };
 
-    const displayError = (error) => {
+    const displayError = (error, severity="warning") => {
+        setAlertSeverity(severity)
         setAlertText(error);
         setOpenPlayerAlert(true);
     };
+
+    const sendCallLastCard = () => {
+        console.log("Sending call last card")
+        socket.emit("game:call_last_card", {"user_id": currentUserId}, timeoutCallback((response) => {
+            console.log("Got call_last_card response:", response);
+            if(response.error){
+                displayError(response.error, "warning");
+            } 
+            }, () => {
+            displayError("No response from server", "error");
+            }, 2000));
+    }
+
+    const onPlayCards = () => {
+        
+        playCards()
+        if(lastCardCallDone){
+            sendCallLastCard();
+            setLastCardCallDone(false);
+        }
+    }
 
     const onSortHand = (sortMethod) => {
         const sortData = {
@@ -63,21 +147,52 @@ const GameRoom = ({ currentUserId, roomInfo, gameStatus, userCards, setUserCards
         socket.emit("card:sort", sortData, timeoutCallback((response) => {
             console.log("Got card:sort:", response);
             if(response.error){
-                setAlertSeverity("warning")
-                displayError(response.error);
+                displayError(response.error, "warning");
             } else {
 
                 const newCards = response.sort_order.map(index => userCards[index]);
                 setUserCards(newCards);
             }
           }, () => {
-            setAlertSeverity("error")
-            displayError("No response from server");
+            displayError("No response from server", "error");
           }, 2000));
             
     }
+    
+    // LAST CARDS FUNCTIONS
+    const onCallLastCardClicked = () => {
+        console.log("Called last card:", lastCardCallDone, lastCardCallAvailable)
+        if(lastCardCallDone){
+            setLastCardCallDone(false);
+            return
+        }
 
-    const {roomId, players, roomLeader} = roomInfo;
+        if(userCards.length === 1){
+            // Player already with only 1 card left, send the message right away
+            sendCallLastCard();
+        } else {
+            // Player is about to play and calls before
+            setLastCardCallDone(true);
+        }
+
+    }
+
+    const onCallCounterClicked = () => {
+        console.log("Called counter!!!!")
+        if(lastCardCallAvailable){
+            displayError("You should better call your last card!!!", "info")
+            return
+        }
+        socket.emit("game:counter_last_card", {"user_id": currentUserId}, timeoutCallback((response) => {
+            console.log("Got call_last_card response:", response);
+            if(response.error){
+                displayError(response.error, "warning");
+            } 
+            }, () => {
+            displayError("No response from server", "error");
+            }, 2000));
+
+    }
 
     console.log("Creating gameRoom", roomInfo, gameStatus)
     
@@ -87,7 +202,6 @@ const GameRoom = ({ currentUserId, roomInfo, gameStatus, userCards, setUserCards
       }, [])
 
     const selectCard = (index) => {
-        console.log("Card selected:", index)
         setUserCards(userCards.map((card) => {
             if (card.idx === index) {
                 return { ...card, selected: !card.selected };
@@ -95,6 +209,8 @@ const GameRoom = ({ currentUserId, roomInfo, gameStatus, userCards, setUserCards
               return card;
             }
           }));
+        // If a card is selected, reset
+        setLastCardCallDone(false);
     }
 
     const isPlayerTurn = (userId) => {
@@ -116,7 +232,7 @@ const GameRoom = ({ currentUserId, roomInfo, gameStatus, userCards, setUserCards
         return playerInfoDict;
     }
 
-    const userPlayerIdx = players.findIndex(player => player.user_id === currentUserId);
+    
 
 
     const renderOpponents = () => {
@@ -124,6 +240,8 @@ const GameRoom = ({ currentUserId, roomInfo, gameStatus, userCards, setUserCards
         if(playersGameInfo.length < 2){
             return null;
         }
+        
+        const userPlayerIdx = players.findIndex(player => player.user_id === currentUserId);
         
         return playersGameInfo.map((player, index) => {
 
@@ -135,9 +253,7 @@ const GameRoom = ({ currentUserId, roomInfo, gameStatus, userCards, setUserCards
                     <UserContainer $position={playerPosition}>
                         <Opponent 
                             isCurrentPlayerTurn={isPlayerTurn(player.user_id)}
-                            username={player.username} 
-                            nbCards={player.nbCards} 
-                            score={player.score}
+                            player={player}
                             position={playerPosition} />
                     </UserContainer>)
             } else {
@@ -147,21 +263,6 @@ const GameRoom = ({ currentUserId, roomInfo, gameStatus, userCards, setUserCards
         });
     
     }
-
-    const playersGameInfo =  players.map(player => ({ ...player, 'nbCards': gameStatus.players_info[player.user_id].nb_cards, 'score':gameStatus.players_info[player.user_id].score }))    
-    
-    const otherPlayers = playersGameInfo.filter(player => player.user_id !== currentUserId);  // Filter out the current user
-    const currentPlayer = playersGameInfo.find(player => player.user_id === currentUserId);
-
-    const interRoundInfo = gameStatus.inter_round_info ? gameStatus.inter_round_info : null;
-    const cardExchangeInfo = gameStatus.card_exchange_info ? gameStatus.card_exchange_info : null;
-
-    const [showCardExchange, setShowCardExchange] = useState(false);
-    const [showGameResults, setShowGameResults] = useState(false);
-    const [showInterRoundInfo, setShowInterRoundInfo] = useState(false);
-
-
-
     // Only display card exchange for limited amount of time
     useEffect(() => {
         if (cardExchangeInfo) {
@@ -233,11 +334,15 @@ const GameRoom = ({ currentUserId, roomInfo, gameStatus, userCards, setUserCards
                 
                     :
                     <React.Fragment>
-                        <PlayerActionButton text="Play" onClick={() => playCards()} 
-                                        disabled={showCardExchange  || (!isPlayerTurn(currentUserId)) }/>
+                        <PlayerActionButton text="Play" onClick={() => onPlayCards()} 
+                                        disabled={showCardExchange  || (!isPlayerTurn(currentUserId))}/>
                         <PlayerActionButton text="Pass" onClick={() => passTurn()}
                                         disabled={showCardExchange || (!isPlayerTurn(currentUserId))}/>
-                    </React.Fragment>
+                        <PlayerActionButton text="Last Card!" onClick={() => onCallLastCardClicked()}
+                                        disabled={!(lastCardCallAvailable)} isClicked={lastCardCallDone}/>
+                        <PlayerActionButton text="TAPADICARTE!" onClick={() => onCallCounterClicked()}
+                                        disabled={!(counterPossible)} isClicked={true}/>
+                </React.Fragment>
                 }
                 </div>
             
