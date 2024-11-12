@@ -19,11 +19,11 @@ class HandType(IntEnum):
     PAIR = 1
     TWO_PAIRS = 2
     THREE_OF_A_KIND = 3
-    STRAIGHT = 3
-    FLUSH = 4
-    FULL_HOUSE = 5
-    STRAIGHT_FLUSH = 6
-    GANG_OF_X = 7
+    STRAIGHT = 4
+    FLUSH = 5
+    FULL_HOUSE = 6
+    STRAIGHT_FLUSH = 7
+    GANG_OF_X = 8
 
  
 SUITS = [Suits.Red,Suits.Yellow, Suits.Green]
@@ -54,6 +54,9 @@ class Card:
     
     def get_rank_value(self) -> int:
         return Card.ranks.index(self.rank)
+    
+    def __hash__(self):
+        return hash(str(self))
 
     def __eq__(self, value: object) -> bool:
         return (self.rank == value.rank) and (self.suit == value.suit)
@@ -123,7 +126,7 @@ class Hand:
     
     def __init__(self, cards: List[Card]):
         
-        self.cards = sorted(cards)
+        self.cards = tuple(sorted(cards))
         self.has_poulet = any(card.is_poulet for card in self.cards)
         self.ranks = [card.rank for card in self.cards]
         self.suits = [card.suit for card in self.cards]
@@ -140,7 +143,7 @@ class Hand:
         return len(self.cards)
     
     def get_card_list(self) -> List[Card]:
-        return self.cards.copy()
+        return list(self.cards)
     
     def get_str_card_list(self):
         return [str(card) for card in self.cards]
@@ -183,6 +186,8 @@ class Hand:
 
     def is_three_of_a_kind(self):
         """Check if there are three cards of the same rank."""
+        # if self.get_hand_size() != 3:
+        #     return False
         
         rank_counts = Counter(self.ranks)
         return list(rank_counts.values()) == [3]
@@ -231,6 +236,15 @@ class Hand:
         
         return None
     
+    def valid_to_play(self, previous_hand):
+        if previous_hand is None:
+            return True
+    
+        if not ((self.hand_type == HandType.GANG_OF_X) or (self.get_hand_size() == previous_hand.get_hand_size())):
+            return False
+        
+        return previous_hand.__lt__(self)
+    
     def __eq__(self, other):
         """Equality comparison between two hands."""
         return self.cards == other.cards
@@ -267,3 +281,12 @@ class Hand:
     
     def __le__(self, other):
         return (self.__lt__(other) or self.__eq__(other))
+    
+    def __hash__(self):
+        return hash(self.cards)
+
+    def __str__(self):
+        return str(self.cards)
+    
+    def __repr__(self):
+        return self.__str__()

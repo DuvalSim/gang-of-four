@@ -5,6 +5,8 @@ from socket_manager import SocketManager
 from deck import Card, Hand
 from room import Room
 
+from utils.hand_helpers import argsort_cards
+
 import logging
 
 logger = None
@@ -218,18 +220,21 @@ async def card_exchange(sid, data):
      
     try:
         user_id = data["user_id"]
+        cards = data["cards"]
         sort_method = data["sort_method"]
 
         # Check that user is authorized
         if not __is_authorized_user(user_id, sid):
             raise ValueError("User not authorized")
         
-        room_id = room_manager.get_room_from_user(user_id)
-        player = room_manager.active_rooms[room_id].get_player(user_id)
+        # room_id = room_manager.get_room_from_user(user_id)
+        # player = room_manager.active_rooms[room_id].get_player(user_id)
 
         # return {"sort_order": "]"}
         
-        sort_order = player.sort_cards(sort_method=sort_method)
+        # sort_order = player.sort_cards(sort_method=sort_method)
+        
+        sort_order = argsort_cards([Card.build_from_str(card) for card in cards], sort_method=sort_method)
 
         
         response_data = {

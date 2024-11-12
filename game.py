@@ -4,6 +4,8 @@ from player import Player
 from deck import Deck, Card, Suits, Hand, HandType
 from operator import itemgetter
 
+from utils.hand_helpers import get_playable_combinations, argsort_cards
+
 import copy
 from enum import StrEnum
 
@@ -314,8 +316,28 @@ class Game:
                 if not hand_played.contains(Card("1", Suits.Multicolor)):
                     raise ValueError("First hand of the game has to contain Multicolored 1")
                 self.play_with_one_mult = False
+
+
+            # Check that next player has more than one card:
+            next_player = self.players_dict[self.play_order_player_id_list[self.get_next_player_idx()]]
+            if len(hand_played.get_card_list()) == 1 and (len(next_player.get_cards_in_hand()) == 1):
+                # Check if player can play more than one card
+                playable_combs = get_playable_combinations(current_player.get_cards_in_hand(), self.previous_hand)
+                
+                if len(playable_combs) > 0:
+                    playable_combs = sorted(playable_combs, key=lambda x: (x.hand_type, x))
+                    if self.previous_hand is None:
+                        #Player can play anything
+                        if playable_combs[-1] != hand_played:
+                            # print("Could play:", playable_combs[-1])
+                            raise ValueError("You have to play multiple cards or your best card")        
+                    else:
+                        best_hand = max(hand for hand in playable_combs if hand.hand_type == HandType.HIGH_CARD)
+                        if hand_played != best_hand:
+                            # print("Could play:", best_hand)
+                            raise ValueError("You have to play multiple cards or your best card")
             
-            # Check valid combination
+            # Check that combination can be played
             if self.previous_hand is not None:
 
                 valid_hand = (hand_played.hand_type == HandType.GANG_OF_X) or (hand_played.get_hand_size() == self.previous_hand.get_hand_size()) 
