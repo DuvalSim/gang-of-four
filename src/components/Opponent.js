@@ -51,6 +51,7 @@ const Opponent = ({ player, position, isCurrentPlayerTurn }) => {
                     selected={false}
                     idx={index}
                     position={position}
+                    key={index}
                 />
             </div>
         ));

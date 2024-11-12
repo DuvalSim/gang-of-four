@@ -59,6 +59,7 @@ const App = () => {
         if (roomId) localStorage.setItem(STORAGE_KEYS.ROOM_ID, roomId);
     }, [clientId, roomId]);
 
+
     useEffect(() => {
 
         function onConnect(){
@@ -73,6 +74,7 @@ const App = () => {
 
         function onDisconnect(reason) {
             console.log('Disconnected:', reason);
+            // clearStoredData();
         }
 
         function onReconnect(data){
@@ -236,6 +238,12 @@ const App = () => {
         }
     }
 
+    const leaveRoom = () => {
+        clearStoredData();
+        socket.disconnect();
+        socket.connect();
+    }
+
     const createRoom = (username) => {        
         socket.emit('room:create', {user_id: clientId, username: username});
     };
@@ -327,10 +335,12 @@ const App = () => {
                                     setUserCards={setUserCards}
                                     playCards={playCards}
                                     passTurn={passTurn}
-                                    exchangeCard={exchangeCard}/>)
+                                    exchangeCard={exchangeCard}
+                                    leaveGame={leaveRoom}/>)
                     :   roomInfo ? <WaitingRoom currentUserId={clientId} 
                                                 roomInfo={roomInfo}
-                                                onStartGame={startGame}/>
+                                                onStartGame={startGame}
+                                                leaveRoom={leaveRoom}/>
                     :   null}
             
         </ThemeProvider>

@@ -1,11 +1,9 @@
-Faire les contrôles quand on joue avant un joueur avec une seule carte
-
 Implémenter quand un joueur veut quitter la partie.
+> Virer l'user etc 
 
 Afficher tous les rounds sur l'écran de fin + "Game Finished >> You win / You loose"
 
 Mettre des bruitages
-
 
 Créer une exception spécifique qui renvoie une erreur, et les autres renvoie des critical error
 

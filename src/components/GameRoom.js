@@ -5,14 +5,13 @@ import GameBoard from './GameBoard';
 import { Snackbar, Alert } from '@mui/material';
 import PlayerActionButton from './PlayerActionButton';
 
-import Scoreboard from './ScoreBoard';
-
 import "../css/game_room.css"
 import gameBoardImg from "../images/gameBoard.png";
 import styled from 'styled-components';
 import PlayDirection from './PlayDirection';
 import socket from '../socket';
 import { timeoutCallback } from '../socket';
+import LeaveRoomButton from './LeaveRoomButton';
 
 const UserContainer = styled.div`
         position: absolute;
@@ -22,6 +21,7 @@ const UserContainer = styled.div`
         justify-content: center;
         ${props => (["top", "bottom"].includes(props.$position)) ? "width: 100vw;" : "height: 100vh;"}
         ${props => ("bottom" !== props.$position) ? props.$position + ": 0.5em;" : "bottom:0;"}
+        ${props => props.$inactive ? "filter: grayscale(1);" : ""}
 `
 
 const playerIdxPositionMap = {
@@ -33,7 +33,7 @@ const playerIdxPositionMap = {
 
 
 // Need to retrieve nbCards
-const GameRoom = ({ currentUserId, roomInfo, gameStatus, userCards, setUserCards, playCards, passTurn, exchangeCard}) => {
+const GameRoom = ({ currentUserId, roomInfo, gameStatus, userCards, setUserCards, playCards, passTurn, exchangeCard, leaveGame}) => {
 
     const [openPlayerAlert, setOpenPlayerAlert] = React.useState(false);
     const [alertText, setAlertText] = React.useState("");
@@ -251,11 +251,12 @@ const GameRoom = ({ currentUserId, roomInfo, gameStatus, userCards, setUserCards
             
             if(playerPosition !== "bottom"){
                 return (
-                    <UserContainer $position={playerPosition}>
+                    <UserContainer $position={playerPosition} $inactive={!player.active}>
                         <Opponent 
                             isCurrentPlayerTurn={isPlayerTurn(player.user_id)}
                             player={player}
                             position={playerPosition} />
+                            
                     </UserContainer>)
             } else {
                 return null;
@@ -301,7 +302,8 @@ const GameRoom = ({ currentUserId, roomInfo, gameStatus, userCards, setUserCards
     return (
 
         <div className="game-room">
-                        
+
+                       
             <div className="game-board-container">
                     <img src={gameBoardImg} alt="game board" className='game-board-img'/>
 
@@ -358,6 +360,9 @@ const GameRoom = ({ currentUserId, roomInfo, gameStatus, userCards, setUserCards
                 onClose={handleClose}>
                     <Alert severity={alertSeverity} variant="filled">{alertText}</Alert>
             </Snackbar>
+
+            <LeaveRoomButton
+            onClick={leaveGame}/>
 
             
         </div>
