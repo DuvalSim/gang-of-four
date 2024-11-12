@@ -141,7 +141,8 @@ const GameRoom = ({ currentUserId, roomInfo, gameStatus, userCards, setUserCards
     const onSortHand = (sortMethod) => {
         const sortData = {
             user_id : currentUserId,
-            sort_method: sortMethod
+            sort_method: sortMethod, 
+            cards: userCards.map(card => card.name)
         }
 
         socket.emit("card:sort", sortData, timeoutCallback((response) => {

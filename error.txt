@@ -6,4 +6,8 @@ Afficher tous les rounds sur l'écran de fin + "Game Finished >> You win / You l
 
 Mettre des bruitages
 
+
+Créer une exception spécifique qui renvoie une erreur, et les autres renvoie des critical error
+
+
 Faire le drag and drop des cartes >> pour plus tard
