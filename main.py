@@ -27,10 +27,46 @@ async def connect(sid, environ):
 @sio.event
 async def disconnect(sid):
     # Check if user was in a room:
-    await room_manager.on_user_disconnect(sid, sio)
-    
-    
+    user_id = socket_manager.get_user_from_socket(sid)
+    room_id = room_manager.get_room_from_user(user_id)
+    if room_id and user_id:
+        current_game = room_manager.active_rooms[room_id].current_game if room_manager.active_rooms[room_id].current_game else None
+        
+        room_manager.on_user_disconnect(user_id, room_id)
+
+        room = room_manager.get_room(room_id)
+        if room is not None:
+            if current_game:
+                current_game.remove_player(user_id)
+                await __send_game_status(room_id)
+                print("Sent game status")
+            await __send_room_info(room_id)    
+            print("Sent room status")
     print(f'Client {sid} disconnected')
+
+# @sio.on('room:leave')
+# async def user_leave(sid, data):
+#     try:
+
+#         user_id = socket_manager.get_user_from_socket(sid)        
+#         room_id = room_manager.get_room_from_user(user_id)
+#         room = room_manager.active_rooms[room_id]
+
+#         await sio.disconnect(sid)
+#         # on disconnect removes user from room
+        
+#         if room.current_game is not None:
+#             # remove from current game    
+#             room.current_game.remove_player(user_id)
+#             await __send_game_status(room_id)
+
+#         await __send_room_info(room)
+                        
+         
+
+#     except Exception as e:
+#         await sio.emit('room:leave', {"error": "Could not leave:" + str(e)}, to=sid)
+#         raise
 
 @sio.on('room:reconnect')
 async def reconnect(sid, data):
@@ -233,7 +269,7 @@ async def card_exchange(sid, data):
         # return {"sort_order": "]"}
         
         # sort_order = player.sort_cards(sort_method=sort_method)
-        
+
         sort_order = argsort_cards([Card.build_from_str(card) for card in cards], sort_method=sort_method)
 
         
@@ -262,7 +298,7 @@ async def counter_last_card(sid, data):
 
         await sio.emit("game:counter_last_card", {"user_id": user_id, "blocked_players": blocked_players_id}, to=room_id)
 
-        await __send_room_status(room_manager[room_id])
+        await __send_game_status(room_id)
         
     
     except Exception as e:
@@ -292,10 +328,15 @@ async def call_last_card(sid, data):
     
     return {"status": "ok"}
 
+async def __send_room_info(room_id: str):
 
-async def __send_room_status(current_room: Room):
+    status_data = room_manager.active_rooms[room_id].get_room_info()
 
-    room_id = current_room.room_id
+    await sio.emit('room:update', status_data , room=room_id)
+
+
+async def __send_game_status(room_id: str):
+
 
     status_data = room_manager.active_rooms[room_id].current_game.get_status()
     if status_data.get("inter_round_info", None) is not None:
@@ -304,7 +345,7 @@ async def __send_room_status(current_room: Room):
             await sio.emit('game:cards', data, to=socket_manager.get_user_socket_id(player.client_id))   
 
     await sio.emit('game:status', status_data , room=room_id)
-    
+
 
 if __name__ == '__main__':
     import uvicorn

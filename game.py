@@ -4,6 +4,8 @@ from player import Player
 from deck import Deck, Card, Suits, Hand, HandType
 from operator import itemgetter
 
+from copy import deepcopy
+
 from utils.hand_helpers import get_playable_combinations, argsort_cards
 
 import copy
@@ -26,7 +28,6 @@ class Game:
         self.max_score = max_score
 
         self.players_dict = {player.client_id: player for player in players}
-        self.scores = {player.client_id: 0 for player in players}
         self.play_order_player_id_list = [player.client_id for player in players]
 
         self.nb_cards_to_deal = 16
@@ -72,6 +73,20 @@ class Game:
         # handle last_card
         self.safe_players = []
         self.blocked_players = []
+
+    def get_active_players(self) -> List[Player]:
+        return [player for player in self.players_dict.values() if player.is_active]
+
+    def remove_player(self, user_id):
+  
+        if user_id != self.get_current_player().client_id:
+            next_player_id = self.play_order_player_id_list[self.get_next_player_idx()]
+            self.play_order_player_id_list.remove(user_id)
+            self.current_turn_player_idx = self.play_order_player_id_list.index(next_player_id)
+        else:     
+            self.play_order_player_id_list.remove(user_id)
+        
+        
 
     def _get_nb_playing_players(self)-> int:
         return len(self.play_order_player_id_list)
@@ -132,11 +147,13 @@ class Game:
         self.last_round_looser = None
 
         round_scores = {}
+        current_scores = {}
 
         for player in self.players_dict.values():
             player_score = Game.get_player_round_score(player)
+            player.score_round(self.current_round, player_score)
             round_scores[player.client_id] = player_score
-            self.scores[player.client_id] += player_score
+            current_scores[player.client_id] = player.get_score()
 
         # Uupdate round winner and looser
         player_id_sorted_by_score = sorted(round_scores, key=round_scores.get)
@@ -150,9 +167,9 @@ class Game:
 
         if len(round_looser_id_list) > 1:
             # Choose worse player in game score
-            worst_overall_score = self.scores[max(round_looser_id_list, key= lambda player_id: self.scores[player_id])]
+            worst_overall_score = current_scores[max(round_looser_id_list, key= lambda player_id: current_scores[player_id])]
 
-            round_looser_id_list = [player_id for player_id in round_looser_id_list if (worst_overall_score == self.scores[player_id])]
+            round_looser_id_list = [player_id for player_id in round_looser_id_list if (worst_overall_score == current_scores[player_id])]
 
             if len(round_looser_id_list) > 1:
                 # If still players with same overall score:
@@ -164,7 +181,7 @@ class Game:
 
         self.last_round_looser = self.players_dict[round_looser_id_list[0]]
 
-        if any([(score >= self.max_score) for score in self.scores.values()]):
+        if any([(score >= self.max_score) for score in current_scores.values()]):
             self.end_game()
             return
 
@@ -187,11 +204,16 @@ class Game:
         # Prepare new cycle:
 
         # reset players in play
-        self.play_order_player_id_list = [user_id for user_id in self.players_dict.keys()]
+        self.play_order_player_id_list = self.get_active_players()
         self.blocked_players = []
         self.safe_players = []
 
-        next_player_to_start_idx = self.play_order_player_id_list.index(self.last_round_winner.client_id)
+        # Check in case winner left after winning
+        if self.last_round_winner.client_id in self.play_order_player_id_list:
+            next_player_to_start_idx =  self.play_order_player_id_list.index(self.last_round_winner.client_id)
+        else:
+            next_player_to_start_idx = 0
+
         self.set_current_player(next_player_to_start_idx)
         
         self.consecutive_pass = 0
@@ -219,11 +241,13 @@ class Game:
 
         self.game_winners = []
         min_value = self.max_score
-        for k, v in self.scores.items():
-            if v == min_value:
-                self.game_winners.append(k)
-            elif v < min_value:
-                self.game_winners = [k]
+        for player in self.players_dict.values():
+
+            if player.get_score() == min_value:
+                self.game_winners.append(player.get_user_id())
+            elif player.get_score() < min_value:
+                self.game_winners = [player.get_user_id()]
+                min_value = player.get_score()
 
         self.game_status = self.GameStatus.GameEnd
 
@@ -363,7 +387,7 @@ class Game:
             "play_direction": "clockwise" if (self.order_of_play == 1) else "counter_clockwise",
             "players_info": {
                 player.client_id: {"nb_cards": player.nb_cards_in_hand(),
-                                   "score": self.scores[player.client_id],
+                                   "score": player.get_score(),
                                     "blocked": (player.client_id in self.blocked_players),
                                     "safe": (player.client_id in self.safe_players) } 
                 for player in self.players_dict.values()
@@ -377,9 +401,15 @@ class Game:
                 "last_looser" : self.last_round_looser.client_id,
                 "looser_to_winner_card" : str(self.looser_to_winner_card)
             }
+            status_dict["score_history"] = {
+                player.client_id: player.get_score_history() for player in self.players_dict.values()
+            }
 
         if self.game_status == self.GameStatus.GameEnd:
             status_dict["game_winners"] = self.game_winners
+            status_dict["score_history"] = {
+                player.client_id: player.get_score_history() for player in self.players_dict.values()
+            }
 
         return status_dict
     
@@ -395,4 +425,4 @@ class Game:
         }
   
     def __str__(self):
-        return f"Game with {len(self.players_dict)} players, Round: {self.current_round} - Scores: {self.scores}"
+        return f"Game with {len(self.players_dict)} players, Round: {self.current_round}"

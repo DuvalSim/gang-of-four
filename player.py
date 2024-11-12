@@ -8,7 +8,22 @@ class Player:
         self.client_id = client_id
         self.username = username
         self.cards : List[Card] = []
+        self.score_history: dict[int] = {}
+        self.score = 0
         self.is_active = True
+
+    def get_user_id(self) -> str:
+        return self.client_id
+
+    def score_round(self, round:int, score: int):
+        self.score_history[round] = score
+        self.score += score
+
+    def get_score(self) -> int:
+        return self.score
+    
+    def get_score_history(self) -> dict[int]:
+        return self.score_history
 
     def set_active(self, is_active):
         self.is_active = is_active

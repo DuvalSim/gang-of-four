@@ -48,6 +48,9 @@ class RoomManager:
         if socket_manager.get_user_room_id(user_id=client_id) is not None:
             raise ValueError("Player already in a room")
         
+        if room.current_game is not None:
+            raise ValueError("Cannot join while a game is played")
+        
         room.add_player(new_player)
 
         socket_manager.add_user(user_id=client_id, socket_id=socket_id, room_id=room_id)
@@ -56,7 +59,7 @@ class RoomManager:
     def leave_room(self, room_id: str, user_id):
         room = self.active_rooms.get(room_id)
         if room is None:
-            raise ValueError(f"error while joining room: room [{room_id}] does not exist")
+            raise ValueError(f"error while leaving room: room [{room_id}] does not exist")
         
         if user_id not in room.players.keys():
             raise ValueError("Player not in room")
@@ -66,6 +69,9 @@ class RoomManager:
 
         if len(room.get_players()) == 0:
             self.remove_room(room_id)
+    
+    def get_room(self, room_id: str) -> Room | None:
+        return self.active_rooms.get(room_id, None)
 
     def get_room_from_user(self, user_id) -> str:
         return socket_manager.get_user_room_id(user_id=user_id)
@@ -77,23 +83,12 @@ class RoomManager:
 
         del self.active_rooms[room_id]
 
-    async def on_user_disconnect(self, socket_id, sio):
-        user_id = socket_manager.get_user_from_socket(socket_id=socket_id)
-        room_id = self.get_room_from_user(user_id)
-
-        if room_id and user_id :
-            current_room = self.active_rooms[room_id]
-            if current_room and current_room.current_game:
-                self.set_inactive_user(user_id)
-            elif current_room:
-                current_room.remove_player(user_id)
-                socket_manager.remove_user(user_id)
-                if len(current_room.get_players()) == 0:
-                    self.remove_room(room_id)
-                else:
-                    print("Change room, send update")
-                    await sio.emit("room:update", current_room.get_room_info() , room=room_id)
-
+    def leave_room(self, room_id, user_id):
+        current_room = self.active_rooms[room_id]
+        current_room.remove_player(user_id)
+        socket_manager.remove_user(user_id)
+        if len(current_room.get_players()) == 0:
+            self.remove_room(room_id)
 
     def set_inactive_user(self, user_id):
         room_id = self.get_room_from_user(user_id)
@@ -101,8 +96,13 @@ class RoomManager:
             self.active_rooms[room_id].get_player(user_id).set_active(False)
             if not any([player.is_active for player in self.active_rooms[room_id].get_players()]):
                 self.remove_room(room_id)                
-                print(f"Room [{room_id}] deleted")
-    
+
+    def on_user_disconnect(self, user_id, room_id):
+        current_room = self.active_rooms[room_id]
+        if current_room and current_room.current_game:
+            self.set_inactive_user(user_id)
+        elif current_room:
+            self.leave_room(room_id, user_id)  
             
     def get_players(self, room_id):
         room = self.active_rooms.get(room_id)
