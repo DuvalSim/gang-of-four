@@ -1,9 +1,5 @@
-// src/components/RoomInfo.js
-import { Button, useTheme } from '@mui/material';
 import React from 'react';
 import styled from 'styled-components';
-import socket from '../socket';
-import Scoreboard from './ScoreBoard';
 
 const Root = styled.div`
     position: absolute;

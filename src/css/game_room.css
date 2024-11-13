@@ -71,7 +71,7 @@
 .player-buttons-container{
     box-sizing: border-box; /*la width va jusqu'à la bordure et inclue le padding*/
     position: absolute;
-    top:0;
+    /* top:0; */
     right: 0;
     width: 15em;
     justify-content: space-around;
@@ -121,16 +121,6 @@
     align-items: center;
 } 
 
-
-.card, .opponent-card  {
-    overflow: hidden;
-}
-
-.card:last-child, .opponent-card:last-child, .card:hover {
-    overflow: visible;
-}
-
-
 /* Card images - upsized and overlapping */
 .card-img {
 
@@ -138,7 +128,7 @@
     min-width: 2em;
     height: 6em; 
 
-    display: flex;
+    display: block;
     /* flex-direction: column; */
     justify-content: center;
     align-items: center;

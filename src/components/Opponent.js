@@ -45,7 +45,7 @@ const Opponent = ({ player, position, isCurrentPlayerTurn }) => {
     const renderOpponentCards = () => {
         
         return Array.from({length: nbCards}).map((_, index) => (
-            <div className={`opponent-card`} key={index}>
+            // <div className={`opponent-card`} key={index}>
                 <Card
                     name='1-M'
                     selected={false}
@@ -53,7 +53,7 @@ const Opponent = ({ player, position, isCurrentPlayerTurn }) => {
                     position={position}
                     key={index}
                 />
-            </div>
+            // </div>
         ));
     
     };
@@ -65,13 +65,11 @@ const Opponent = ({ player, position, isCurrentPlayerTurn }) => {
             <CardContainer $vertical={position !== "top"} 
             $highlighted={isCurrentPlayerTurn} 
             $blocked={isBlocked} 
-            onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
-            
-
+            onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>           
+                {showNbCards && (<NbCardInfo><Chip label={`${nbCards} card${nbCards > 1 ? "s" : ""} left`} color="primary"/></NbCardInfo>)}
                 <div className={`player-cards-${position}`}>
                 {(nbCards && nbCards > 0)  && renderOpponentCards()}  {/* Display cards if available */}
                 </div>
-                {showNbCards && (<NbCardInfo><Chip label={`${nbCards} card${nbCards > 1 ? "s" : ""} left`} color="primary"/></NbCardInfo>)}
             </CardContainer>
                 
             {/* </div> */}

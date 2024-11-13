@@ -10,6 +10,8 @@ const CardsContainer = styled.div`
     width: 100%;
     justify-content: center;
     filter: ${props => props.$highlighted ? "drop-shadow(0 0 20px white)" : ""};
+    padding-top: 20px;
+    overflow: hidden;
 `
 
 const Player = ({ username, cards, nbCards, score, position, onCardSelected, isTurnToPlay, onSortHand }) => {
@@ -18,8 +20,13 @@ const Player = ({ username, cards, nbCards, score, position, onCardSelected, isT
     const renderPlayerCards = () => {
 
         if (cards) {
-            return cards.map(card => (
-                <div className={`card ${card.selected ? 'selected' : ''}`} key={card.idx}>
+            return (
+                // <div className={`card ${card.selected ? 'selected' : ''}`} key={card.idx}>
+                // </div>
+            <CardsContainer $highlighted={isTurnToPlay}>
+                {cards.map(card => (
+                    
+                
                 <Card
                     name={card.name}
                     selected={card.selected}
@@ -27,16 +34,18 @@ const Player = ({ username, cards, nbCards, score, position, onCardSelected, isT
                     position={position}
                     onSelect={onCardSelected}
                 />
-                </div>
-            ));
+                
+            ))}
+            </CardsContainer>
+        );
         }
     };
 
     return (
         <div className="player">
-            <CardsContainer $highlighted={isTurnToPlay}>
-                {((cards && cards.length > 0) || (nbCards && nbCards > 0))  && renderPlayerCards()}  {/* Display cards if available */}
-            </CardsContainer>
+            
+            {((cards && cards.length > 0) || (nbCards && nbCards > 0))  && renderPlayerCards()}  {/* Display cards if available */}
+            
             <div className="player-info-container">
                 <Chip
                     avatar={<Avatar>{username.charAt(0)}</Avatar>}
