@@ -74,8 +74,8 @@ class Game:
         self.safe_players = []
         self.blocked_players = []
 
-    def get_active_players(self) -> List[Player]:
-        return [player for player in self.players_dict.values() if player.is_active]
+    def get_active_players_id(self) -> List[str]:
+        return [player.get_user_id() for player in self.players_dict.values() if player.is_active]
 
     def remove_player(self, user_id):
   
@@ -204,7 +204,7 @@ class Game:
         # Prepare new cycle:
 
         # reset players in play
-        self.play_order_player_id_list = self.get_active_players()
+        self.play_order_player_id_list = self.get_active_players_id()
         self.blocked_players = []
         self.safe_players = []
 
@@ -259,7 +259,7 @@ class Game:
         """Deal cards to all players."""
         card_per_player = self.nb_cards_to_deal
         for player in self.players_dict.values():
-            player.add_cards(self.deck.deal_card(card_per_player))
+            player.add_cards(self.deck.deal_card(5))
 
     # def counter_last_card(self, client_id):
 
