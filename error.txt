@@ -1,7 +1,4 @@
-Implémenter quand un joueur veut quitter la partie.
-> Virer l'user etc 
-
-Afficher tous les rounds sur l'écran de fin + "Game Finished >> You win / You loose"
+Interdire de passer quand on peut jouer et que je joueur d'après a qu'une carte. (si le truc en cours est une seule carte)
 
 Mettre des bruitages
 

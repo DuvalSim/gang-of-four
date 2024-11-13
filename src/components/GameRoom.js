@@ -216,24 +216,7 @@ const GameRoom = ({ currentUserId, roomInfo, gameStatus, userCards, setUserCards
 
     const isPlayerTurn = (userId) => {
         return gameStatus.player_to_play === userId;
-    }
-
-    
-
-    const buildPlayerDict = (gameStatus, players) => {
-        let playerInfoDict = {};
-        players.forEach(player => {
-            playerInfoDict[player.user_id] = {
-                username : player.username,
-                nbCards : gameStatus.players_info[player.user_id].nb_cards,
-                score: gameStatus.players_info[player.user_id].score,
-            }
-        });
-
-        return playerInfoDict;
-    }
-
-    
+    }   
 
 
     const renderOpponents = () => {
@@ -312,8 +295,11 @@ const GameRoom = ({ currentUserId, roomInfo, gameStatus, userCards, setUserCards
                             lastHand={gameStatus.previous_hand}
                             interRoundInfo={showInterRoundInfo ? interRoundInfo : null}
                             cardExchangeInfo={showCardExchange ? cardExchangeInfo : null}
-                            playersInfo={buildPlayerDict(gameStatus, players)}
+                            scoreHistory={gameStatus.score_history}
+                            playersInfo={playersGameInfo}
                             currentUserId={currentUserId}
+
+                            // currentRound={gameStatus.current_round}
                         />                  
         
             </div>

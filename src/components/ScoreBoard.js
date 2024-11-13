@@ -3,41 +3,46 @@ import React from "react";
 import {TableContainer, Table, TableHead, TableRow, TableCell, TableBody} from "@mui/material";
 // import Paper from "@mui/material";
 
-export default function Scoreboard({ currentUserId, players }) {
+export default function Scoreboard({ players, currentRound, scoreHistory }) {
+
+  console.log("Creating Scoreboard", scoreHistory)
 
   return (
     <div>
-      <Typography variant="h2" textAlign="center" fontWeight={600} mb={6}>
-        Game Finished!!
-      </Typography>
-
       <TableContainer>
       <Table sx={{ minWidth: 650 }} size="small" aria-label="a dense table">
         <TableHead>
           <TableRow>
             <TableCell>Player</TableCell>
-            <TableCell align="right">Final Score</TableCell>
+            
+            {[...Array(currentRound)].map((_, roundIdx) => (
+              <TableCell key={roundIdx} align="right">
+                Round {roundIdx + 1}
+              </TableCell>))
+            }
+            <TableCell align="right">Total</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
-          {Object.entries(players).map(([playerId, info], idx) => (
+          {players.sort((player, other) => player.score - other.score).map((player, idx) => (
             <TableRow
               key={idx}
               sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
             >
               <TableCell component="th" scope="row">
-                {info.username}
+                {player.username}
               </TableCell>
-              <TableCell align="right">{info.score}</TableCell>
+              {[...Array(currentRound)].map((_, roundIdx) => (
+              <TableCell key={roundIdx} align="right">
+                {scoreHistory[player.user_id][roundIdx + 1]}
+              </TableCell>))
+            }
+            <TableCell align="right">{player.score}</TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
     </TableContainer>
-
-      <Grid2 container justifyContent="center" mt={6}>
-          <Button variant="contained" onClick={() => {}}>Play Again</Button>
-      </Grid2>
     </div>
   );
   
