@@ -323,7 +323,7 @@ const App = () => {
         <div id="app">
         
         <ThemeProvider theme={testTheme}>
-            <ErrorDisplay errorMessage={errorMessage}/>
+            <ErrorDisplay errorMessage={errorMessage} setErrorMessage={setErrorMessage}/>
 
             {!roomId ? (<HomePage createRoom={createRoom} joinRoom={joinRoom} setErrorMessage={setErrorMessage} />)
                     :  gameState ?  (     

@@ -11,10 +11,7 @@
     background-size: cover;
     
     background-repeat: no-repeat;
-    background-position: center;
-    border: 2px solid #2e22b2;
-
-    
+    background-position: center;  
 }   
 
 /* Responsive rectangular game board container with a 4:3 aspect ratio */
