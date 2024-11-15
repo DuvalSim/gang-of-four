@@ -31,6 +31,7 @@ const GameBoard = ({ lastHand, interRoundInfo, cardExchangeInfo, playersInfo, cu
                         <div className="player-cards-bottom" style={{gap: 2 + 'em'}}>
                         {lastHand.map((card, index) => (
                             <img
+                            key={index+"board"}
                             idx={index+"board"}
                             src={require(`../images/cards/${card}.png`)}  // Show face-up cards for current user
                             alt={card}

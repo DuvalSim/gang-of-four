@@ -1,8 +1,3 @@
-Interdire de passer quand on peut jouer et que je joueur d'après a qu'une carte. (si le truc en cours est une seule carte)
-
 Mettre des bruitages
 
-Créer une exception spécifique qui renvoie une erreur, et les autres renvoie des critical error
-
-
-Faire le drag and drop des cartes >> pour plus tard
+Mettre des animations
