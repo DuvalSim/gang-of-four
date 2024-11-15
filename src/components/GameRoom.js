@@ -203,6 +203,7 @@ const GameRoom = ({ currentUserId, roomInfo, gameStatus, userCards, setUserCards
       }, [])
 
     const selectCard = (index) => {
+        console.log("selected")
         setUserCards(userCards.map((card) => {
             if (card.idx === index) {
                 return { ...card, selected: !card.selected };
@@ -316,6 +317,7 @@ const GameRoom = ({ currentUserId, roomInfo, gameStatus, userCards, setUserCards
                     onCardSelected={selectCard}
                     isTurnToPlay={gameStatus.player_to_play === currentPlayer.user_id}
                     onSortHand={onSortHand}
+                    setUserCards={setUserCards}
                 />
                 <div className="player-buttons-container">
                 { interRoundInfo && interRoundInfo.last_winner === currentUserId ?

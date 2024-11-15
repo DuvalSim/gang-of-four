@@ -18,22 +18,22 @@ const PlayerCardWrapper = styled(CardWrapper)`
     }
 `;
 
-const Card = ({ name, selected, idx, position, onSelect}) => {
+const Card = ({ name, selected, idx, position, onSelect, ref}) => {
     
     const renderCard = () => {
 
         if (onSelect) {
             return (
-                <PlayerCardWrapper $selected={selected} onClick={() => onSelect(idx)}>
+                // <PlayerCardWrapper $selected={selected} >
                 <img
-                    idx={idx}
+                    key={idx}
                     src={require(`../images/cards/${name}.png`)}  // Show face-up cards for current user
                     alt={name}
                     className={`card-img ${position}-card`}
-                    onClick={() => onSelect(idx)}  // Click handler to toggle selection
+                    onClick={() => onSelect(idx)}
                     
                 />
-                </PlayerCardWrapper>
+                // </PlayerCardWrapper>
             )
         } else {
             return (
