@@ -2,6 +2,7 @@ from deck import Card
 from player import Player
 from typing import List
 from socket_manager import SocketManager
+from utils.InvalidRequestException import InvalidRequestException 
 
 from game import Game
 
@@ -42,17 +43,17 @@ class Room:
         # if not self.is_full():
         #     raise ValueError("Not enought player to start")
         if Player(user_id) not in self.get_players():
-            raise ValueError("WTF get out of there")
+            raise InvalidRequestException("WTF get out of there")
 
         if self.current_game is None or self.current_game.is_restartable():
             self.current_game = Game(list(self.players.values()))
         else:
-            raise ValueError("Game already on")
+            raise InvalidRequestException("Game already on")
         
     def get_player(self, client_id) -> Player:
         player = self.players.get(client_id)
         if player is None:
-            raise ValueError(f"Client [{client_id}] not in room")
+            raise InvalidRequestException(f"Client [{client_id}] not in room")
 
         return player
 

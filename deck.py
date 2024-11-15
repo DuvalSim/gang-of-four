@@ -3,6 +3,7 @@ from enum import Enum, IntEnum
 import random
 
 from collections import Counter
+from utils.InvalidRequestException import InvalidRequestException
 
 class Suits(IntEnum):
         
@@ -104,7 +105,7 @@ class Deck:
     
     def deal_card(self, nb_card:int) -> List[Card]:
         if nb_card > self.nb_cards():
-            raise ValueError("Not enought cards remaining")
+            raise ValueError("Not enough cards remaining")
         return [self.deck.pop() for _ in range(nb_card)]
     
 class Hand:
@@ -134,7 +135,7 @@ class Hand:
         self.hand_type = self.calculate_hand_type()
 
         if self.hand_type is None:
-            raise ValueError("Not a valid hand")
+            raise InvalidRequestException("Not a valid hand")
         
     def contains(self, card: Card):
         return card in self.cards

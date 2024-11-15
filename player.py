@@ -1,6 +1,7 @@
 from typing import List
 from deck import Card
 import copy
+from utils.InvalidRequestException import InvalidRequestException
 
 class Player:
 
@@ -35,7 +36,7 @@ class Player:
         try:
             self.cards.remove(card)
         except ValueError as e:
-            raise ValueError("Card not in hand")
+            raise InvalidRequestException("Card not in hand")
     def reset_hand(self):
         self.cards = []
 
@@ -47,7 +48,7 @@ class Player:
             for card in cards_played:
                 current_player_hand.remove(card)
         except Exception:
-            raise ValueError("Some cards not in player hand")
+            raise InvalidRequestException("Some cards not in player hand")
         self.cards = current_player_hand
 
     def get_cards_in_hand(self) -> List[Card]:

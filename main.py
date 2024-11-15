@@ -6,6 +6,7 @@ from deck import Card, Hand
 from room import Room
 
 from utils.hand_helpers import argsort_cards
+from utils.InvalidRequestException import InvalidRequestException
 
 import logging
 
@@ -98,6 +99,10 @@ async def reconnect(sid, data):
         socket_manager.update_user_socket(client_id, sid)
         await sio.enter_room(sid=sid, room=room_id)
 
+    except InvalidRequestException as e:
+        print("Got InvalidRequestException:", str(e))
+        await sio.emit('room:reconnect', {"error": "Could not reconnect:" + str(e), "severity":"warning"}, to=sid)
+        raise
     except Exception as e:
         await sio.emit('room:reconnect', {"error": "Could not reconnect:" + str(e)}, to=sid)
         raise
@@ -120,7 +125,10 @@ async def create_room(sid, data):
 
         response_data = room_manager.active_rooms[room_id].get_room_info()
         await sio.emit('room:create', response_data, sid)
-        
+
+    except InvalidRequestException as e:
+        print(f'Error while creating room: {e}')
+        await sio.emit('room:create', {'error': str(e), "severity":"warning"}, sid)      
     except Exception as e:
         print(f'Error while creating room: {e}')
         await sio.emit('room:create', {'error': str(e)}, sid)
@@ -142,10 +150,15 @@ async def join_room(sid, data):
 
         await sio.emit('room:update', response_data, to=room_id, skip_sid=sid)
 
+    except InvalidRequestException as e:
+        print(f'Error while joining room: {e}')
+        await sio.emit('room:join', {'error': str(e), "severity":"warning"}, sid)
+        return 
     except Exception as e:
         print(f'Error while joining room: {e}')
+        
         await sio.emit('room:join', {'error': str(e)}, sid)
-        return 
+        raise 
 
 
 @sio.on('game:start')
@@ -155,10 +168,14 @@ async def start_game(sid, data):
     try:
         room_id = room_manager.get_room_from_user(user_id)
         if room_id is None:
-            raise ValueError("Not in room")
+            raise InvalidRequestException("Not in room")
         current_room = room_manager[room_id]
         current_room.start_game(user_id)
 
+    except InvalidRequestException as e:
+        print("Error:", str(e))
+        await sio.emit('game:start', {'error': str(e), "severity":"warning"}, sid)
+        raise
     except Exception as e:
         print("Error:", str(e))
         await sio.emit('game:start', {'error': str(e)}, sid)
@@ -189,6 +206,11 @@ async def play_game(sid, data):
             current_room.current_game.play_turn(user_id, current_hand)
         else:
             current_room.current_game.play_turn(user_id, pass_turn=True)
+
+    except InvalidRequestException as e:
+        print("Error:", str(e))
+        await sio.emit('game:play', {'error': str(e), "severity":"warning"}, sid)
+        raise
     except Exception as e:
         print("Error:", str(e))
         await sio.emit('game:play', {'error': str(e)}, sid)
@@ -225,6 +247,10 @@ async def card_exchange(sid, data):
 
         current_room.current_game.complete_card_exchanges(user_id, winner_to_looser_card)
     
+    except InvalidRequestException as e:
+        print("Error:", str(e))
+        await sio.emit('game:card_exchange', {'error': str(e), "severity":"warning"}, sid)
+        raise
     except Exception as e:
         print("Error:", str(e))
         await sio.emit('game:card_exchange', {'error': str(e)}, sid)
@@ -261,7 +287,7 @@ async def card_exchange(sid, data):
 
         # Check that user is authorized
         if not __is_authorized_user(user_id, sid):
-            raise ValueError("User not authorized")
+            raise InvalidRequestException("User not authorized")
         
         # room_id = room_manager.get_room_from_user(user_id)
         # player = room_manager.active_rooms[room_id].get_player(user_id)
@@ -279,6 +305,9 @@ async def card_exchange(sid, data):
 
         return response_data
     
+    except InvalidRequestException as e:
+        print("Got InvalidRequestException:", str(e))
+        return {"error" : str(e), "severity":"warning"}    
     except Exception as e:
         print("Got error:", str(e))
         return {"error" : str(e)}
@@ -291,7 +320,7 @@ async def counter_last_card(sid, data):
 
         # Check that user is authorized
         if not __is_authorized_user(user_id, sid):
-            raise ValueError("User not authorized")
+            raise InvalidRequestException("User not authorized")
         
         room_id = room_manager.get_room_from_user(user_id)
         blocked_players_id = room_manager.active_rooms[room_id].current_game.counter_last_card(user_id)
@@ -300,7 +329,9 @@ async def counter_last_card(sid, data):
 
         await __send_game_status(room_id)
         
-    
+    except InvalidRequestException as e:
+        print("Got InvalidRequestException:", str(e))
+        return {"error" : str(e), "severity":"warning"}
     except Exception as e:
         print("Got error:", str(e))
         return {"error" : str(e)}
@@ -314,7 +345,7 @@ async def call_last_card(sid, data):
 
         # Check that user is authorized
         if not __is_authorized_user(user_id, sid):
-            raise ValueError("User not authorized")
+            raise InvalidRequestException("User not authorized")
         
         room_id = room_manager.get_room_from_user(user_id)
         room_manager.active_rooms[room_id].current_game.call_last_card(user_id)
@@ -322,6 +353,9 @@ async def call_last_card(sid, data):
         await sio.emit("game:call_last_card", {"user_id": user_id}, to=room_id)
         await sio.emit('game:status', room_manager.active_rooms[room_id].current_game.get_status(), room=room_id)
     
+    except InvalidRequestException as e:
+        print("Got InvalidRequestException:", str(e))
+        return {"error" : str(e), "severity":"warning"}
     except Exception as e:
         print("Got error:", str(e))
         return {"error" : str(e)}

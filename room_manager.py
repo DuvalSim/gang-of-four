@@ -5,6 +5,7 @@ from room import Room
 from player import Player
 from socket_manager import SocketManager
 from nanoid import generate
+from utils.InvalidRequestException import InvalidRequestException
 
 socket_manager = SocketManager()
 
@@ -37,19 +38,19 @@ class RoomManager:
         room = self.active_rooms.get(room_id)
         new_player = Player(client_id=client_id, username=username)
         if room is None:
-            raise ValueError(f"error while joining room: room [{room_id}] does not exist")
+            raise InvalidRequestException(f"error while joining room: room [{room_id}] does not exist")
         
         if room.is_full():
-            raise ValueError("Room is full")
+            raise InvalidRequestException("Room is full")
         
         if new_player in room.get_players():
-            raise ValueError("Player already in room")
+            raise InvalidRequestException("Player already in room")
         
         if socket_manager.get_user_room_id(user_id=client_id) is not None:
-            raise ValueError("Player already in a room")
+            raise InvalidRequestException("Player already in a room")
         
         if room.current_game is not None:
-            raise ValueError("Cannot join while a game is played")
+            raise InvalidRequestException("Cannot join while a game is played")
         
         room.add_player(new_player)
 
@@ -59,10 +60,10 @@ class RoomManager:
     def leave_room(self, room_id: str, user_id):
         room = self.active_rooms.get(room_id)
         if room is None:
-            raise ValueError(f"error while leaving room: room [{room_id}] does not exist")
+            raise InvalidRequestException(f"error while leaving room: room [{room_id}] does not exist")
         
         if user_id not in room.players.keys():
-            raise ValueError("Player not in room")
+            raise InvalidRequestException("Player not in room")
         
         room.remove_player(user_id)
         socket_manager.remove_user(user_id=user_id)
@@ -109,14 +110,14 @@ class RoomManager:
         if room is not None:
             return room.get_players()
         else:
-            raise ValueError(f"No such room [{room_id}]")
+            raise InvalidRequestException(f"No such room [{room_id}]")
         
     def get_players_info(self, room_id):
         room = self.active_rooms.get(room_id)
         if room is not None:
             return [player.get_public_info() for player in room.get_players()]
         else:
-            raise ValueError(f"No such room [{room_id}]")
+            raise InvalidRequestException(f"No such room [{room_id}]")
         
     def __getitem__(self, key):
         room =self.active_rooms.get(key)

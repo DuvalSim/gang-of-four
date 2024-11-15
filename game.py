@@ -3,6 +3,7 @@ from typing import List
 from player import Player
 from deck import Deck, Card, Suits, Hand, HandType
 from operator import itemgetter
+from utils.InvalidRequestException import InvalidRequestException
 
 from copy import deepcopy
 
@@ -22,7 +23,7 @@ class Game:
 
     def __init__(self, players : List[Player], max_score = 50) -> None:
         if len(players) < 2 or len(players) > 4:
-            raise ValueError(f"Need to be 3 or 4 players to play the game")
+            raise InvalidRequestException(f"Need to be 3 or 4 players to play the game")
         
         
         self.max_score = max_score
@@ -79,12 +80,13 @@ class Game:
 
     def remove_player(self, user_id):
   
-        if user_id != self.get_current_player().client_id:
+        current_player_id = self.get_current_player().client_id
+        if user_id != current_player_id:
+            self.play_order_player_id_list.remove(user_id)
+        else:
             next_player_id = self.play_order_player_id_list[self.get_next_player_idx()]
             self.play_order_player_id_list.remove(user_id)
             self.current_turn_player_idx = self.play_order_player_id_list.index(next_player_id)
-        else:     
-            self.play_order_player_id_list.remove(user_id)
         
         
 
@@ -223,10 +225,10 @@ class Game:
     def complete_card_exchanges(self, client_id,  winner_to_looser_card : Card):
 
         if self.game_status != self.GameStatus.InterRound:
-            raise ValueError("Not right moment")
+            raise InvalidRequestException("Not right moment")
 
         if client_id != self.last_round_winner.client_id:
-            raise ValueError("Card not coming from last round winner")
+            raise InvalidRequestException("Card not coming from last round winner")
         
         self.last_round_winner.remove_card(winner_to_looser_card)
         self.last_round_looser.add_cards([winner_to_looser_card])
@@ -259,22 +261,22 @@ class Game:
         """Deal cards to all players."""
         card_per_player = self.nb_cards_to_deal
         for player in self.players_dict.values():
-            player.add_cards(self.deck.deal_card(5))
+            player.add_cards(self.deck.deal_card(card_per_player))
 
     # def counter_last_card(self, client_id):
 
     def call_last_card(self, client_id):
         
         if len(self.players_dict[client_id].get_cards_in_hand()) > 1:
-            raise ValueError("More than 1 card left")
+            raise InvalidRequestException("More than 1 card left")
                 
         # if client_id != current_player.client_id:
-        #     raise ValueError("Wait for your turn")
+        #     raise InvalidRequestException("Wait for your turn")
         
         if client_id not in self.play_order_player_id_list:
-            raise ValueError("Already blocked -- Too late now")
+            raise InvalidRequestException("Already blocked -- Too late now")
         elif client_id in self.safe_players:
-            raise ValueError("Already safe")
+            raise InvalidRequestException("Already safe")
 
         self.safe_players.append(client_id)
 
@@ -286,7 +288,7 @@ class Game:
         """
 
         if caller_id not in self.players_dict:
-            raise ValueError("Player does not exist")
+            raise InvalidRequestException("Player does not exist")
 
         one_card_players = [ player.client_id for player in self.players_dict.values() 
                             if (len(player.get_cards_in_hand()) == 1) and 
@@ -294,7 +296,7 @@ class Game:
                                  (player.client_id in self.play_order_player_id_list)]
         
         if len(one_card_players) < 1 :
-            raise ValueError("No counter to make")
+            raise InvalidRequestException("No counter to make")
         
         for player_id in one_card_players:
             self.play_order_player_id_list.remove(player_id)
@@ -318,32 +320,39 @@ class Game:
     def play_turn(self, client_id , hand_played: Hand = None, pass_turn: bool = False ):
 
         if self.game_status != self.GameStatus.Playing:
-            raise ValueError("Not play phase")
+            raise InvalidRequestException("Not play phase")
 
         current_player = self.get_current_player()
         
         if client_id != current_player.client_id:
-            raise ValueError("Not current player's turn")
+            raise InvalidRequestException("Not current player's turn")
         
+        next_player = self.players_dict[self.play_order_player_id_list[self.get_next_player_idx()]]
         # pass
         if pass_turn:
             if self.previous_hand is None:
-                raise ValueError("Cannot pass this turn")            
+                raise InvalidRequestException("Cannot pass this turn")
+
+            # Last player has only one card left -- Cannot pass 
+            if (len(next_player.get_cards_in_hand()) == 1) and (self.previous_hand.hand_type == HandType.HIGH_CARD):
+                playable_combs = get_playable_combinations(current_player.get_cards_in_hand(), self.previous_hand)
+                if len([comb for comb in playable_combs if comb.hand_type == HandType.HIGH_CARD]) > 0:
+                    raise InvalidRequestException("Next player has only one card left: You have to play your best card")
+
             self.consecutive_pass += 1
 
         else:
             if hand_played is None:
-                raise ValueError("Cannot play null hand")
+                raise InvalidRequestException("Cannot play null hand")
             
             if self.play_with_one_mult:
                 # This hands has to be played with 1 mult
                 if not hand_played.contains(Card("1", Suits.Multicolor)):
-                    raise ValueError("First hand of the game has to contain Multicolored 1")
+                    raise InvalidRequestException("First hand of the game has to contain Multicolored 1")
                 self.play_with_one_mult = False
 
 
             # Check that next player has more than one card:
-            next_player = self.players_dict[self.play_order_player_id_list[self.get_next_player_idx()]]
             if len(hand_played.get_card_list()) == 1 and (len(next_player.get_cards_in_hand()) == 1):
                 # Check if player can play more than one card
                 playable_combs = get_playable_combinations(current_player.get_cards_in_hand(), self.previous_hand)
@@ -354,21 +363,21 @@ class Game:
                         #Player can play anything
                         if playable_combs[-1] != hand_played:
                             # print("Could play:", playable_combs[-1])
-                            raise ValueError("You have to play multiple cards or your best card")        
+                            raise InvalidRequestException("You have to play multiple cards or your best card")        
                     else:
                         best_hand = max(hand for hand in playable_combs if hand.hand_type == HandType.HIGH_CARD)
                         if hand_played != best_hand:
                             # print("Could play:", best_hand)
-                            raise ValueError("You have to play multiple cards or your best card")
+                            raise InvalidRequestException("You have to play multiple cards or your best card")
             
             # Check that combination can be played
             if self.previous_hand is not None:
 
                 valid_hand = (hand_played.hand_type == HandType.GANG_OF_X) or (hand_played.get_hand_size() == self.previous_hand.get_hand_size()) 
                 if not valid_hand:
-                    raise ValueError(f"Hand is not of correct type - Need {self.previous_hand.get_hand_size()} cards")
+                    raise InvalidRequestException(f"Hand is not of correct type - Need {self.previous_hand.get_hand_size()} cards")
                 if hand_played <= self.previous_hand:
-                    raise ValueError("Hand is not stronger that previous one")
+                    raise InvalidRequestException("Hand is not stronger that previous one")
                 
             current_player.play_hand(cards_played=hand_played.get_card_list())
             self.previous_hand = hand_played
