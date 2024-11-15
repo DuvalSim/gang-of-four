@@ -4,16 +4,18 @@ from room_manager import RoomManager
 from socket_manager import SocketManager
 from deck import Card, Hand
 from room import Room
+from config import Config
 
 from utils.hand_helpers import argsort_cards
 from utils.InvalidRequestException import InvalidRequestException
 
-import logging
-
 logger = None
 
 # Create an ASGI Socket.IO server
-sio = socketio.AsyncServer(cors_allowed_origins='*', async_mode = 'asgi')
+sio = socketio.AsyncServer(
+    cors_allowed_origins=Config.CORS_ALLOWED_ORIGINS,
+    async_mode='asgi'
+)
 app = socketio.ASGIApp(sio)
 
 room_manager = RoomManager()
@@ -156,7 +158,7 @@ async def join_room(sid, data):
         return 
     except Exception as e:
         print(f'Error while joining room: {e}')
-        
+
         await sio.emit('room:join', {'error': str(e)}, sid)
         raise 
 
