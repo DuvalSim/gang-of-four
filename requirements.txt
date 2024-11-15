@@ -12,3 +12,4 @@ simple-websocket==1.1.0
 uvicorn==0.31.1
 Werkzeug==3.0.4
 wsproto==1.2.0
+nanoid==2.0.0

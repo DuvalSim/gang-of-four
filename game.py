@@ -3,6 +3,11 @@ from typing import List
 from player import Player
 from deck import Deck, Card, Suits, Hand, HandType
 from operator import itemgetter
+from utils.InvalidRequestException import InvalidRequestException
+
+from copy import deepcopy
+
+from utils.hand_helpers import get_playable_combinations, argsort_cards
 
 import copy
 from enum import StrEnum
@@ -16,15 +21,14 @@ class Game:
         GameEnd = 'End'
     
 
-    def __init__(self, players : List[Player], max_score = 100) -> None:
+    def __init__(self, players : List[Player], max_score = 50) -> None:
         if len(players) < 2 or len(players) > 4:
-            raise ValueError(f"Need to be 3 or 4 players to play the game")
+            raise InvalidRequestException(f"Need to be 3 or 4 players to play the game")
         
         
         self.max_score = max_score
 
         self.players_dict = {player.client_id: player for player in players}
-        self.scores = {player.client_id: 0 for player in players}
         self.play_order_player_id_list = [player.client_id for player in players]
 
         self.nb_cards_to_deal = 16
@@ -67,7 +71,30 @@ class Game:
 
         self.game_status = self.GameStatus.Playing
 
-        # TODO: make sure first hand has 1 mult in hand
+        # handle last_card
+        self.safe_players = []
+        self.blocked_players = []
+
+    def get_active_players_id(self) -> List[str]:
+        return [player.get_user_id() for player in self.players_dict.values() if player.is_active]
+
+    def remove_player(self, user_id):
+  
+        current_player_id = self.get_current_player().client_id
+        if user_id != current_player_id:
+            self.play_order_player_id_list.remove(user_id)
+        else:
+            next_player_id = self.play_order_player_id_list[self.get_next_player_idx()]
+            self.play_order_player_id_list.remove(user_id)
+            self.current_turn_player_idx = self.play_order_player_id_list.index(next_player_id)
+        
+        
+
+    def _get_nb_playing_players(self)-> int:
+        return len(self.play_order_player_id_list)
+
+    def is_restartable(self) -> bool:
+        return self.game_status == self.GameStatus.GameEnd
 
     def set_current_player(self, new_idx: int):
         self.current_turn_player_idx = new_idx
@@ -80,7 +107,7 @@ class Game:
         current_player = self.get_current_player()
 
         # Change current turn if necessary
-        if self.consecutive_pass == (self.nb_players - 1):
+        if self.consecutive_pass == (self._get_nb_playing_players() - 1):
             self.next_cycle()
         
         # Next round
@@ -88,10 +115,15 @@ class Game:
             self.next_round()
         else:
             # Keep on playing
-            self.set_current_player((self.current_turn_player_idx + self.order_of_play) % self.nb_players)
+            self.set_current_player(self.get_next_player_idx())
+
+    def get_next_player_idx(self):
+        next_player_idx = (self.current_turn_player_idx + self.order_of_play) % self._get_nb_playing_players()
+            
+        return next_player_idx
 
     def next_cycle(self):
-        self.set_current_player((self.current_turn_player_idx + self.order_of_play) % self.nb_players)
+        self.set_current_player(self.get_next_player_idx())
         self.previous_hand = None
         self.consecutive_pass = 0
 
@@ -117,11 +149,13 @@ class Game:
         self.last_round_looser = None
 
         round_scores = {}
+        current_scores = {}
 
         for player in self.players_dict.values():
             player_score = Game.get_player_round_score(player)
+            player.score_round(self.current_round, player_score)
             round_scores[player.client_id] = player_score
-            self.scores[player.client_id] += player_score
+            current_scores[player.client_id] = player.get_score()
 
         # Uupdate round winner and looser
         player_id_sorted_by_score = sorted(round_scores, key=round_scores.get)
@@ -135,9 +169,9 @@ class Game:
 
         if len(round_looser_id_list) > 1:
             # Choose worse player in game score
-            worst_overall_score = self.scores[max(round_looser_id_list, key= lambda player_id: self.scores[player_id])]
+            worst_overall_score = current_scores[max(round_looser_id_list, key= lambda player_id: current_scores[player_id])]
 
-            round_looser_id_list = [player_id for player_id in round_looser_id_list if (worst_overall_score == self.scores[player_id])]
+            round_looser_id_list = [player_id for player_id in round_looser_id_list if (worst_overall_score == current_scores[player_id])]
 
             if len(round_looser_id_list) > 1:
                 # If still players with same overall score:
@@ -149,7 +183,7 @@ class Game:
 
         self.last_round_looser = self.players_dict[round_looser_id_list[0]]
 
-        if any([(score >= self.max_score) for score in self.scores.values()]):
+        if any([(score >= self.max_score) for score in current_scores.values()]):
             self.end_game()
             return
 
@@ -170,10 +204,20 @@ class Game:
         self.last_round_winner.add_cards([self.looser_to_winner_card])
         
         # Prepare new cycle:
-        next_player_to_start_idx = self.play_order_player_id_list.index(self.last_round_winner.client_id)
+
+        # reset players in play
+        self.play_order_player_id_list = self.get_active_players_id()
+        self.blocked_players = []
+        self.safe_players = []
+
+        # Check in case winner left after winning
+        if self.last_round_winner.client_id in self.play_order_player_id_list:
+            next_player_to_start_idx =  self.play_order_player_id_list.index(self.last_round_winner.client_id)
+        else:
+            next_player_to_start_idx = 0
+
         self.set_current_player(next_player_to_start_idx)
         
-        self.previous_hand = None
         self.consecutive_pass = 0
 
         self.game_status = self.GameStatus.InterRound
@@ -181,15 +225,17 @@ class Game:
     def complete_card_exchanges(self, client_id,  winner_to_looser_card : Card):
 
         if self.game_status != self.GameStatus.InterRound:
-            raise ValueError("Not right moment")
+            raise InvalidRequestException("Not right moment")
 
         if client_id != self.last_round_winner.client_id:
-            raise ValueError("Card not coming from last round winner")
+            raise InvalidRequestException("Card not coming from last round winner")
         
         self.last_round_winner.remove_card(winner_to_looser_card)
         self.last_round_looser.add_cards([winner_to_looser_card])
 
         self.winner_to_looser_card = winner_to_looser_card
+
+        self.previous_hand = None
 
         self.game_status = self.GameStatus.Playing
 
@@ -197,11 +243,13 @@ class Game:
 
         self.game_winners = []
         min_value = self.max_score
-        for k, v in self.scores.items():
-            if v == min_value:
-                self.game_winners.append(k)
-            elif v < min_value:
-                self.game_winners = [k]
+        for player in self.players_dict.values():
+
+            if player.get_score() == min_value:
+                self.game_winners.append(player.get_user_id())
+            elif player.get_score() < min_value:
+                self.game_winners = [player.get_user_id()]
+                min_value = player.get_score()
 
         self.game_status = self.GameStatus.GameEnd
 
@@ -217,54 +265,120 @@ class Game:
 
     # def counter_last_card(self, client_id):
 
-    # def call_last_card(self, client_id):
+    def call_last_card(self, client_id):
         
-    #     if len(self.players_dict[client_id].get_cards_in_hand()) > 1:
-    #         raise ValueError("Cannot call last card when more than 1 card in hand")
+        if len(self.players_dict[client_id].get_cards_in_hand()) > 1:
+            raise InvalidRequestException("More than 1 card left")
+                
+        # if client_id != current_player.client_id:
+        #     raise InvalidRequestException("Wait for your turn")
         
-    #     current_player = self.get_current_player()
+        if client_id not in self.play_order_player_id_list:
+            raise InvalidRequestException("Already blocked -- Too late now")
+        elif client_id in self.safe_players:
+            raise InvalidRequestException("Already safe")
+
+        self.safe_players.append(client_id)
+
+    def counter_last_card(self, caller_id) -> List[str]:
+        """Counter players that have only one card left
+
+        Returns:
+            List[str]: List of players that have been countered
+        """
+
+        if caller_id not in self.players_dict:
+            raise InvalidRequestException("Player does not exist")
+
+        one_card_players = [ player.client_id for player in self.players_dict.values() 
+                            if (len(player.get_cards_in_hand()) == 1) and 
+                                (player.client_id not in (self.safe_players)) and
+                                 (player.client_id in self.play_order_player_id_list)]
         
-    #     if client_id != current_player.client_id:
-    #         raise ValueError("Not current player's turn")
+        if len(one_card_players) < 1 :
+            raise InvalidRequestException("No counter to make")
         
-    #     self.
+        for player_id in one_card_players:
+            self.play_order_player_id_list.remove(player_id)
+            self.blocked_players.append(player_id)
+
+        if len(self.play_order_player_id_list) == 0:
+            # make caller win (can only be one winner)
+            self.players_dict[caller_id].cards = []
+            self.next_round()
+        elif len(self.play_order_player_id_list) == 1:
+            self.players_dict[self.play_order_player_id_list[0]].cards = []
+            self.next_round()
+        else:
+            # Still enough players to play:
+            if self.get_current_player().client_id in self.blocked_players:
+                self.next_turn()
+
+        return one_card_players
 
 
     def play_turn(self, client_id , hand_played: Hand = None, pass_turn: bool = False ):
 
         if self.game_status != self.GameStatus.Playing:
-            raise ValueError("Not play phase")
+            raise InvalidRequestException("Not play phase")
 
         current_player = self.get_current_player()
         
         if client_id != current_player.client_id:
-            raise ValueError("Not current player's turn")
+            raise InvalidRequestException("Not current player's turn")
         
+        next_player = self.players_dict[self.play_order_player_id_list[self.get_next_player_idx()]]
         # pass
         if pass_turn:
             if self.previous_hand is None:
-                raise ValueError("Cannot pass this turn")            
+                raise InvalidRequestException("Cannot pass this turn")
+
+            # Last player has only one card left -- Cannot pass 
+            if (len(next_player.get_cards_in_hand()) == 1) and (self.previous_hand.hand_type == HandType.HIGH_CARD):
+                playable_combs = get_playable_combinations(current_player.get_cards_in_hand(), self.previous_hand)
+                if len([comb for comb in playable_combs if comb.hand_type == HandType.HIGH_CARD]) > 0:
+                    raise InvalidRequestException("Next player has only one card left: You have to play your best card")
+
             self.consecutive_pass += 1
 
         else:
             if hand_played is None:
-                raise ValueError("Cannot play null hand")
+                raise InvalidRequestException("Cannot play null hand")
             
             if self.play_with_one_mult:
                 # This hands has to be played with 1 mult
                 if not hand_played.contains(Card("1", Suits.Multicolor)):
-                    raise ValueError("First hand of the game has to contain Multicolored 1")
+                    raise InvalidRequestException("First hand of the game has to contain Multicolored 1")
                 self.play_with_one_mult = False
+
+
+            # Check that next player has more than one card:
+            if len(hand_played.get_card_list()) == 1 and (len(next_player.get_cards_in_hand()) == 1):
+                # Check if player can play more than one card
+                playable_combs = get_playable_combinations(current_player.get_cards_in_hand(), self.previous_hand)
+                
+                if len(playable_combs) > 0:
+                    playable_combs = sorted(playable_combs, key=lambda x: (x.hand_type, x))
+                    if self.previous_hand is None:
+                        #Player can play anything
+                        if playable_combs[-1] != hand_played:
+                            # print("Could play:", playable_combs[-1])
+                            raise InvalidRequestException("You have to play multiple cards or your best card")        
+                    else:
+                        best_hand = max(hand for hand in playable_combs if hand.hand_type == HandType.HIGH_CARD)
+                        if hand_played != best_hand:
+                            # print("Could play:", best_hand)
+                            raise InvalidRequestException("You have to play multiple cards or your best card")
             
-            # Check valid combination
+            # Check that combination can be played
             if self.previous_hand is not None:
 
                 valid_hand = (hand_played.hand_type == HandType.GANG_OF_X) or (hand_played.get_hand_size() == self.previous_hand.get_hand_size()) 
                 if not valid_hand:
-                    raise ValueError(f"Hand is not of correct type - Need {self.previous_hand.get_hand_size()} cards")
+                    raise InvalidRequestException(f"Hand is not of correct type - Need {self.previous_hand.get_hand_size()} cards")
                 if hand_played <= self.previous_hand:
-                    raise ValueError("Hand is not stronger that previous one")
-            
+                    raise InvalidRequestException("Hand is not stronger that previous one")
+                
             current_player.play_hand(cards_played=hand_played.get_card_list())
             self.previous_hand = hand_played
 
@@ -279,9 +393,12 @@ class Game:
             
             "player_to_play": self.get_current_player().client_id,
             "current_round": self.current_round,
+            "play_direction": "clockwise" if (self.order_of_play == 1) else "counter_clockwise",
             "players_info": {
-                player.client_id: { "nb_cards": player.nb_cards_in_hand(),
-                                   "score": self.scores[player.client_id] } 
+                player.client_id: {"nb_cards": player.nb_cards_in_hand(),
+                                   "score": player.get_score(),
+                                    "blocked": (player.client_id in self.blocked_players),
+                                    "safe": (player.client_id in self.safe_players) } 
                 for player in self.players_dict.values()
             },            
             "previous_hand": self.previous_hand.get_str_card_list() if self.previous_hand is not None else None, 
@@ -293,14 +410,28 @@ class Game:
                 "last_looser" : self.last_round_looser.client_id,
                 "looser_to_winner_card" : str(self.looser_to_winner_card)
             }
+            status_dict["score_history"] = {
+                player.client_id: player.get_score_history() for player in self.players_dict.values()
+            }
 
         if self.game_status == self.GameStatus.GameEnd:
             status_dict["game_winners"] = self.game_winners
+            status_dict["score_history"] = {
+                player.client_id: player.get_score_history() for player in self.players_dict.values()
+            }
 
         return status_dict
     
     def get_winner_to_looser_card(self):
         return self.winner_to_looser_card
+    
+    def get_card_exchange_info(self):
+        return {
+            "last_winner" : self.last_round_winner.client_id,
+            "last_looser" : self.last_round_looser.client_id,
+            "looser_to_winner_card" : str(self.looser_to_winner_card),
+            "winner_to_looser_card" : str(self.winner_to_looser_card)
+        }
   
     def __str__(self):
-        return f"Game with {len(self.players_dict)} players, Round: {self.current_round} - Scores: {self.scores}"
+        return f"Game with {len(self.players_dict)} players, Round: {self.current_round}"

@@ -3,6 +3,7 @@ from enum import Enum, IntEnum
 import random
 
 from collections import Counter
+from utils.InvalidRequestException import InvalidRequestException
 
 class Suits(IntEnum):
         
@@ -19,11 +20,11 @@ class HandType(IntEnum):
     PAIR = 1
     TWO_PAIRS = 2
     THREE_OF_A_KIND = 3
-    STRAIGHT = 3
-    FLUSH = 4
-    FULL_HOUSE = 5
-    STRAIGHT_FLUSH = 6
-    GANG_OF_X = 7
+    STRAIGHT = 4
+    FLUSH = 5
+    FULL_HOUSE = 6
+    STRAIGHT_FLUSH = 7
+    GANG_OF_X = 8
 
  
 SUITS = [Suits.Red,Suits.Yellow, Suits.Green]
@@ -51,14 +52,19 @@ class Card:
         self.rank = rank
         self.suit = suit
         self.is_poulet = self.rank in ("Phoenix", 'Dragon')
-
+    
+    def get_rank_value(self) -> int:
+        return Card.ranks.index(self.rank)
+    
+    def __hash__(self):
+        return hash(str(self))
 
     def __eq__(self, value: object) -> bool:
         return (self.rank == value.rank) and (self.suit == value.suit)
     
     def __lt__(self, other:object) -> bool:
-        rank_a_idx = Card.ranks.index(self.rank)
-        rank_b_idx = Card.ranks.index(other.rank)
+        rank_a_idx = self.get_rank_value()
+        rank_b_idx = other.get_rank_value()
         return (rank_a_idx < rank_b_idx) or ((rank_a_idx == rank_b_idx) and (self.suit < other.suit))
     
     def __le__(self, other) -> bool:
@@ -70,6 +76,7 @@ class Card:
     
     def __repr__(self) -> str:
         return f"{self.rank}-{str(self.suit)[0]}"
+    
 
 class Deck:
 
@@ -98,7 +105,7 @@ class Deck:
     
     def deal_card(self, nb_card:int) -> List[Card]:
         if nb_card > self.nb_cards():
-            raise ValueError("Not enought cards remaining")
+            raise ValueError("Not enough cards remaining")
         return [self.deck.pop() for _ in range(nb_card)]
     
 class Hand:
@@ -113,9 +120,14 @@ class Hand:
 
         return Hand(result_card_list)
     
+    # @staticmethod
+    # def sort_cards(card_list: List[Card], sort_method):
+
+
+    
     def __init__(self, cards: List[Card]):
         
-        self.cards = sorted(cards)
+        self.cards = tuple(sorted(cards))
         self.has_poulet = any(card.is_poulet for card in self.cards)
         self.ranks = [card.rank for card in self.cards]
         self.suits = [card.suit for card in self.cards]
@@ -123,7 +135,7 @@ class Hand:
         self.hand_type = self.calculate_hand_type()
 
         if self.hand_type is None:
-            raise ValueError("Not a valid hand")
+            raise InvalidRequestException("Not a valid hand")
         
     def contains(self, card: Card):
         return card in self.cards
@@ -132,7 +144,7 @@ class Hand:
         return len(self.cards)
     
     def get_card_list(self) -> List[Card]:
-        return self.cards.copy()
+        return list(self.cards)
     
     def get_str_card_list(self):
         return [str(card) for card in self.cards]
@@ -175,6 +187,8 @@ class Hand:
 
     def is_three_of_a_kind(self):
         """Check if there are three cards of the same rank."""
+        # if self.get_hand_size() != 3:
+        #     return False
         
         rank_counts = Counter(self.ranks)
         return list(rank_counts.values()) == [3]
@@ -223,6 +237,15 @@ class Hand:
         
         return None
     
+    def valid_to_play(self, previous_hand):
+        if previous_hand is None:
+            return True
+    
+        if not ((self.hand_type == HandType.GANG_OF_X) or (self.get_hand_size() == previous_hand.get_hand_size())):
+            return False
+        
+        return previous_hand.__lt__(self)
+    
     def __eq__(self, other):
         """Equality comparison between two hands."""
         return self.cards == other.cards
@@ -259,3 +282,12 @@ class Hand:
     
     def __le__(self, other):
         return (self.__lt__(other) or self.__eq__(other))
+    
+    def __hash__(self):
+        return hash(self.cards)
+
+    def __str__(self):
+        return str(self.cards)
+    
+    def __repr__(self):
+        return self.__str__()
