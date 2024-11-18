@@ -18,13 +18,12 @@ class Suits(IntEnum):
 class HandType(IntEnum):
     HIGH_CARD = 0
     PAIR = 1
-    TWO_PAIRS = 2
-    THREE_OF_A_KIND = 3
-    STRAIGHT = 4
-    FLUSH = 5
-    FULL_HOUSE = 6
-    STRAIGHT_FLUSH = 7
-    GANG_OF_X = 8
+    THREE_OF_A_KIND = 2
+    STRAIGHT = 3
+    FLUSH = 4
+    FULL_HOUSE = 5
+    STRAIGHT_FLUSH = 6
+    GANG_OF_X = 7
 
  
 SUITS = [Suits.Red,Suits.Yellow, Suits.Green]
@@ -120,11 +119,7 @@ class Hand:
 
         return Hand(result_card_list)
     
-    # @staticmethod
-    # def sort_cards(card_list: List[Card], sort_method):
 
-
-    
     def __init__(self, cards: List[Card]):
         
         self.cards = tuple(sorted(cards))
@@ -193,12 +188,6 @@ class Hand:
         rank_counts = Counter(self.ranks)
         return list(rank_counts.values()) == [3]
 
-    def is_two_pair(self):
-        """Check if there are two pairs."""
-
-        rank_counts = Counter(self.ranks)
-        return list(rank_counts.values()) == [2,2]
-
     def is_one_pair(self):
         """Check if there is one pair."""
         rank_counts = Counter(self.ranks)
@@ -225,9 +214,6 @@ class Hand:
 
         if self.is_three_of_a_kind():
             return HandType.THREE_OF_A_KIND
-    
-        if self.is_two_pair():
-            return HandType.TWO_PAIRS
     
         if self.is_one_pair():
             return HandType.PAIR

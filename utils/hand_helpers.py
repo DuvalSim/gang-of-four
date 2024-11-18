@@ -33,19 +33,6 @@ def get_gang_of_x(card_list: Iterable[Card]) -> set[Hand]:
 
     return gang_of_x_list
 
-def get_two_pairs(card_list : Iterable[Card]) -> set[Hand]:
-    pairs = get_pairs(card_list)
-
-    two_pairs = set()
-    pairs = [pair.get_card_list() for pair in pairs]
-    for first_pair_idx in range(len(pairs) -1):
-        for second_pair_idx in range(first_pair_idx, len(pairs)):
-            first_pair = pairs[first_pair_idx]
-            second_pair = pairs[second_pair_idx]
-            if first_pair[0].get_rank_value() != second_pair[0].get_rank_value():
-                two_pairs.update([Hand(first_pair + second_pair)])
-    return two_pairs
-
 def get_full_houses(card_list: Iterable[Card]) -> set[Hand]:
     # value_counter = Counter(card.get_rank_value() for card in card_list)
     pairs = get_pairs(card_list)
@@ -123,10 +110,6 @@ def get_playable_combinations(card_list : Iterable[Card], last_hand:Hand) -> Lis
     
     # Gang Of Fours:
     possible_combinations.update(get_gang_of_x(card_list))
-    
-    # Two pairs
-    if last_hand is None or (last_hand.hand_type == HandType.TWO_PAIRS):
-        possible_combinations.update(get_two_pairs(card_list))
 
     if last_hand is None or (last_hand.hand_type in (HandType.FLUSH, HandType.STRAIGHT, HandType.FULL_HOUSE)):
         possible_combinations.update(get_full_houses(card_list))

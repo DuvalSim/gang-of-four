@@ -47,29 +47,6 @@ async def disconnect(sid):
             print("Sent room status")
     print(f'Client {sid} disconnected')
 
-# @sio.on('room:leave')
-# async def user_leave(sid, data):
-#     try:
-
-#         user_id = socket_manager.get_user_from_socket(sid)        
-#         room_id = room_manager.get_room_from_user(user_id)
-#         room = room_manager.active_rooms[room_id]
-
-#         await sio.disconnect(sid)
-#         # on disconnect removes user from room
-        
-#         if room.current_game is not None:
-#             # remove from current game    
-#             room.current_game.remove_player(user_id)
-#             await __send_game_status(room_id)
-
-#         await __send_room_info(room)
-                        
-         
-
-#     except Exception as e:
-#         await sio.emit('room:leave', {"error": "Could not leave:" + str(e)}, to=sid)
-#         raise
 
 @sio.on('room:reconnect')
 async def reconnect(sid, data):
@@ -114,8 +91,6 @@ async def reconnect(sid, data):
 @sio.on('room:create')
 async def create_room(sid, data):
 
-    
-    
     try:
 
         room_id = room_manager.create_room()
@@ -259,16 +234,15 @@ async def card_exchange(sid, data):
         raise
 
     else:
-        # card_exchange_data = {"winner": sid, "looser": current_room.current_game.last_round_looser.client_id ,"winner_to_looser_card": card_to_exchange}
 
         card_exchange_data = current_room.current_game.get_card_exchange_info()
         response_data = current_room.current_game.get_status()
         response_data["card_exchange_info"] = card_exchange_data
 
         # Send cards to looser and winner:
-        for player in [current_room.get_player(card_exchange_data["last_looser"]), current_room.get_player(card_exchange_data["last_winner"])]:
-            data = player.get_status()
-            await sio.emit('game:cards', data, to=socket_manager.get_user_socket_id(player.client_id))
+        # for player in [current_room.get_player(card_exchange_data["last_looser"]), current_room.get_player(card_exchange_data["last_winner"])]:
+        #     data = player.get_status()
+        #     await sio.emit('game:cards', data, to=socket_manager.get_user_socket_id(player.client_id))
 
         await sio.emit('game:status', response_data, room=room_id)
 
