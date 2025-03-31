@@ -132,6 +132,21 @@ class Hand:
         if self.hand_type is None:
             raise InvalidRequestException("Not a valid hand")
         
+        # Sort pair then three of a kind for hand comparison purposes
+        elif self.hand_type == HandType.FULL_HOUSE:
+            card_counter = Counter([card.rank for card in cards])
+            three_of_a_kind_cards = []
+            pair_cards = []
+            for card in cards:
+                if card.rank == card_counter.most_common()[0][0]:
+                    three_of_a_kind_cards.append(card)
+                else:
+                    pair_cards.append(card)
+            self.cards = tuple(sorted(pair_cards) + sorted(three_of_a_kind_cards))
+            self.ranks = [card.rank for card in self.cards]
+            self.suits = [card.suit for card in self.cards]
+            
+        
     def contains(self, card: Card):
         return card in self.cards
 
