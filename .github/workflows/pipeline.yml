@@ -27,25 +27,24 @@ jobs:
           docker push ${{ env.IMAGE_URI }}
 
 
-  # deploy:
-  #   needs: publish
-  #   name: deploy image
-  #   runs-on: ubuntu-latest
+  deploy:
+    needs: publish
+    name: deploy image
+    runs-on: ubuntu-latest
 
-  #   steps:
-  #     - name: install ssh keys
-  #       run: |
-  #         install -m 600 -D /dev/null ~/.ssh/id_rsa
-  #         echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-  #         ssh-keyscan -H ${{ secrets.SSH_HOST }} > ~/.ssh/known_hosts
-  #     - name: connect and pull
-  #       run: |
-  #         ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "
-  #           cd ${{ secrets.WORK_DIR }} && \
-  #           docker pull ${{ env.IMAGE_URI }} && \
-  #           docker stop gang-of-four-backend || true && \
-  #           docker rm gang-of-four-backend || true && \
-  #           docker run -d --restart=always --name gang-of-four-backend -p 8000:8000 ${{ env.IMAGE_URI }}
-  #         "
-  #     - name: cleanup
-  #       run: rm -rf ~/.ssh
+    steps:
+      - name: install ssh keys
+        run: |
+          install -m 600 -D /dev/null ~/.ssh/id_rsa
+          echo "${{ secrets.DEPLOY_KEY }}" > ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} > ~/.ssh/known_hosts
+      - name: connect and pull
+        run: |
+          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
+            docker pull ${{ env.IMAGE_URI }} && \
+            docker stop gang-of-four-backend || true && \
+            docker rm gang-of-four-backend || true && \
+            docker run -d --restart=always --name gang-of-four-backend -p 8000:8000 ${{ env.IMAGE_URI }}
+          "
+      - name: cleanup
+        run: rm -rf ~/.ssh
