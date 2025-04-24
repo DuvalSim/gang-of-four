@@ -1,19 +1,23 @@
 import { io } from 'socket.io-client';
 
-const socketAddress =
-  process.env.REACT_APP_ENV === 'production'
-    ? process.env.REACT_APP_API_URL
-    : 'http://localhost:5000'; 
-    
-const socket = io(socketAddress);
+const socket =
+  (process.env.REACT_APP_ENV === 'production'
+    ? io("https://simonduval.fr", {
+      path: "/api/gof"
+    })
+    : io('http://localhost:5000')); 
 
 // Handle connection events
-// socket.on('connect', () => {
-//     console.log('Connected with socket ID:', socket.id);
-// });
+socket.on('connect', () => {
+    console.log('Connected with socket ID:', socket.id);
+});
 
 socket.on('disconnect', () => {
     console.log('Disconnected from server.');
+});
+
+socket.on('error', () => {
+  console.log('Connected with socket ID:');
 });
 
 export const timeoutCallback = (onSuccess, onTimeout, timeout) => {
