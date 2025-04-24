@@ -33,6 +33,7 @@ jobs:
           echo "${{ secrets.DEPLOY_KEY }}" > ~/.ssh/id_rsa
           ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} > ~/.ssh/known_hosts
 
+      - run: ls
       - name: Upload frontend to server
         uses: burnett01/rsync-deployments@7.0.2
         with:
