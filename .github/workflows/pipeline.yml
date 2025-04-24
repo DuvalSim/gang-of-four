@@ -6,7 +6,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: gang-of-four-backend:latest
+  IMAGE_NAME: ${{ github.actor }}/gang-of-four-backend:latest
 
 jobs:
   publish:
