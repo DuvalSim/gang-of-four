@@ -6,7 +6,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.actor }}/gang-of-four-backend:latest
+  IMAGE_URI: ghcr.io/duvalsim/gang-of-four-backend:latest
 
 jobs:
   publish:
@@ -21,8 +21,8 @@ jobs:
       - name: Build and Publish
         run: |
           cd backend
-          docker build . --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          docker build . --tag ${{ env.IMAGE_URI }}
+          docker push ${{ env.IMAGE_URI }}
 
 
   # deploy:
@@ -40,10 +40,10 @@ jobs:
   #       run: |
   #         ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "
   #           cd ${{ secrets.WORK_DIR }} && \
-  #           docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} && \
+  #           docker pull ${{ env.IMAGE_URI }} && \
   #           docker stop gang-of-four-backend || true && \
   #           docker rm gang-of-four-backend || true && \
-  #           docker run -d --restart=always --name gang-of-four-backend -p 8000:8000 ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+  #           docker run -d --restart=always --name gang-of-four-backend -p 8000:8000 ${{ env.IMAGE_URI }}
   #         "
   #     - name: cleanup
   #       run: rm -rf ~/.ssh
