@@ -33,12 +33,12 @@ jobs:
           echo "${{ secrets.DEPLOY_KEY }}" > ~/.ssh/id_rsa
           ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} > ~/.ssh/known_hosts
 
-      - run: ls
+      - run: ls frontend
       - name: Upload frontend to server
         uses: burnett01/rsync-deployments@7.0.2
         with:
           switches: -avzr --delete --chown=${{ secrets.DEPLOY_USER }}:www-data --chmod=D750,F640
-          path: build/
+          path: ./frontend/build/
           remote_path: ${{ secrets.DEPLOY_PATH_FRONTEND }}
           remote_host: ${{ secrets.DEPLOY_HOST }}
           remote_user: ${{ secrets.DEPLOY_USER }}
