@@ -14,28 +14,28 @@ const STORAGE_KEYS = {
     ROOM_ID: 'cardGame_roomId'
 };
 
-const mockGameStatus= {
-    game_is_on: false,
-    player_to_play: "zIvBOQn7m3ZF4itpAAAD",
-    current_round: "2",
-    play_direction: "counter_clockwise",
-    players_info: {
-        kGv7YkzV8Sfbhw_RAAAB: {
-            nb_cards: 16,
-            score: 160
-        },
-        zIvBOQn7m3ZF4itpAAAD: {
-            nb_cards: 0,
-            score: 0
-        }
-    },
-    previous_hand: [
-        "Phoenix-Y"
-    ],
-    game_winners: [
-        "zIvBOQn7m3ZF4itpAAAD"
-    ]
-}
+// const mockGameStatus= {
+//     game_is_on: false,
+//     player_to_play: "zIvBOQn7m3ZF4itpAAAD",
+//     current_round: "2",
+//     play_direction: "counter_clockwise",
+//     players_info: {
+//         kGv7YkzV8Sfbhw_RAAAB: {
+//             nb_cards: 16,
+//             score: 160
+//         },
+//         zIvBOQn7m3ZF4itpAAAD: {
+//             nb_cards: 0,
+//             score: 0
+//         }
+//     },
+//     previous_hand: [
+//         "Phoenix-Y"
+//     ],
+//     game_winners: [
+//         "zIvBOQn7m3ZF4itpAAAD"
+//     ]
+// }
 
 const App = () => {
     
@@ -50,9 +50,7 @@ const App = () => {
     const [clientId, setClientId] = useState(() => localStorage.getItem(STORAGE_KEYS.CLIENT_ID) || null);
     const [roomId, setRoomId] = useState(() => localStorage.getItem(STORAGE_KEYS.ROOM_ID) || null);
 
-    const [showGame, setShowGame] = useState(false);
-
-    const [gameStarted, setGameStarted] = useState(false);
+    const [_, setGameStarted] = useState(false);
 
     useEffect(() => {
         if (clientId) localStorage.setItem(STORAGE_KEYS.CLIENT_ID, clientId);

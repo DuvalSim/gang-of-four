@@ -8,15 +8,15 @@ const CardWrapper = styled.div`
   }
 `;
 
-const PlayerCardWrapper = styled(CardWrapper)`
-    position: relative;
-    transition: transform 0.1s ease;
-    transform: ${props => props.$selected ? 'translateY(-20px)' : 'none'};
-    z-index: ${props => props.$selected ? 2 : 1};
-    &:hover {
-        overflow: visible;
-    }
-`;
+// const PlayerCardWrapper = styled(CardWrapper)`
+//     position: relative;
+//     transition: transform 0.1s ease;
+//     transform: ${props => props.$selected ? 'translateY(-20px)' : 'none'};
+//     z-index: ${props => props.$selected ? 2 : 1};
+//     &:hover {
+//         overflow: visible;
+//     }
+// `;
 
 const Card = ({ name, selected, idx, position, onSelect, ref}) => {
     

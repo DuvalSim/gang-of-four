@@ -1,5 +1,4 @@
-import React, {useState, useEffect} from 'react';
-import Card from './Card';
+import React from 'react';
 import Scoreboard from './ScoreBoard';
 import InterRoundInfo from './InterRoundInfo';
 import CardExchangeInfo from './CardExchangeInfo';
