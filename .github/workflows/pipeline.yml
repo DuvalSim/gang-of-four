@@ -24,7 +24,7 @@ jobs:
       - name: Install dependencies and build
         run: |
           cd frontend
-          npm ci
+          npm ci --legacy-peer-deps
           npm run build
 
       - name: Install SSH key
