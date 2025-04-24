@@ -1,4 +1,3 @@
-from flask import Flask, render_template
 import socketio
 from room_manager import RoomManager
 from socket_manager import SocketManager

@@ -4,7 +4,7 @@ import { io } from 'socket.io-client';
 const socketAddress =
   process.env.REACT_APP_ENV === 'production'
     ? 'https://gangoffourbackend.onrender.com' // Replace with your production backend URL
-    : 'http://localhost:8000'; // Local backend URL
+    : 'http://localhost:5000'; // Local backend URL
     
 const socket = io(socketAddress);
 
