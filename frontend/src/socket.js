@@ -1,10 +1,9 @@
 import { io } from 'socket.io-client';
 
-// Create a singleton socket instance and export it
 const socketAddress =
   process.env.REACT_APP_ENV === 'production'
-    ? 'https://gangoffourbackend.onrender.com' // Replace with your production backend URL
-    : 'http://localhost:5000'; // Local backend URL
+    ? process.env.REACT_APP_API_URL
+    : 'http://localhost:5000'; 
     
 const socket = io(socketAddress);
 

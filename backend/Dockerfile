@@ -13,5 +13,7 @@ COPY . .
 # Expose the port your app will run on
 EXPOSE 8000
 
+ENV ENV "production"
+
 # Command to run your app with Uvicorn
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
