@@ -39,7 +39,7 @@ const GameBoard = ({ lastHand, interRoundInfo, cardExchangeInfo, playersInfo, cu
                         ))}
                     </div>
                     ) : (
-                        <p>New cycle -- play any combination</p>
+                        <p>New cycle -- All combination can be played</p>
                     )
             }
         </div>
